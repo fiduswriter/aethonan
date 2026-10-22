@@ -133,9 +133,10 @@ A complete example is available in `examples/native-views`.
   across workers. Broadcasting to all the clients of a multi-worker setup requires an
   external broker. In the free-threaded (multi-threaded) setup the group is shared across
   the runtime threads of the same worker.
-- **HTTP/2.** Protocol upgrades are an HTTP/1.1 feature. In `http=2` mode native websockets
-  routes cannot work; in `http=auto` mode they work only over HTTP/1.1 connections. This is
-  the same limitation the application websockets have.
+- **HTTP/2.** Since RFC 8441 support (the extended CONNECT method), native websockets
+  routes work over HTTP/2 as well: the handshake answers 2xx (not 101) and the frames
+  travel inside the HTTP/2 stream. `is_upgrade_request` recognises both the HTTP/1.1
+  upgrade headers and the HTTP/2 `:protocol` pseudo-header. See `tests/test_ws_h2.py`.
 - **Access log.** Native requests bypass the Python callback wrapper, hence they are not
   reported in the access log.
 - **Metrics.** Native requests are counted in the `requests_handled` counter, but they have
