@@ -134,7 +134,7 @@ A complete example is available in `examples/native-views`.
   external broker. In the free-threaded (multi-threaded) setup the group is shared across
   the runtime threads of the same worker.
 - **HTTP/2.** Since RFC 8441 support (the extended CONNECT method), native websockets
-  routes work over HTTP/2 as well: the handshake answers 200 (not 101) and the frames
+  routes work over HTTP/2 as well: the handshake answers 2xx (not 101) and the frames
   travel inside the HTTP/2 stream. `is_upgrade_request` recognises both the HTTP/1.1
   upgrade headers and the HTTP/2 `:protocol` pseudo-header. See `tests/test_ws_h2.py`.
 - **Access log.** Native requests bypass the Python callback wrapper, hence they are not
