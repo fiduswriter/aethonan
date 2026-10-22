@@ -1,0 +1,112 @@
+import sys
+
+import pytest
+
+from integration_tests.helpers.http_methods_helpers import get
+
+
+@pytest.mark.benchmark
+@pytest.mark.parametrize("function_type", ["sync", "async"])
+def test_middlewares(function_type: str, session):
+    r = get(f"/{function_type}/middlewares")
+    headers = r.headers
+    # We do not want the request headers to be in the response
+    assert not headers.get("before")
+    assert headers.get("after")
+    assert r.headers.get("after") == f"{function_type}_after_request"
+    assert r.text == f"{function_type} middlewares after"
+
+
+@pytest.mark.benchmark
+def test_global_middleware(session):
+    r = get("/sync/global/middlewares")
+    headers = r.headers
+    assert headers.get("global_after")
+    assert r.headers.get("global_after") == "global_after_request"
+    assert r.text == "sync global middlewares"
+
+
+@pytest.mark.benchmark
+def test_response_in_before_middleware(session):
+    r = get("/sync/middlewares/401", should_check_response=False)
+    assert r.status_code == 401
+
+
+@pytest.mark.benchmark
+def test_multiple_middlewares_on_same_route(session):
+    """#1158 / #828: stacking multiple before/after middlewares on the same
+    route must chain (and not panic at startup)."""
+    r = get("/sync/multiple_middlewares")
+    # both after_request handlers ran
+    assert r.headers.get("after1") == "1"
+    assert r.headers.get("after2") == "2"
+    # and the handler asserted both before_request handlers ran
+    assert r.text == "sync multiple middlewares"
+
+
+@pytest.mark.benchmark
+def test_before_request_bare_dict_short_circuits(session):
+    """#793: a bare dict returned from before_request is cast to a JSON Response."""
+    r = get("/sync/before/bare_dict", should_check_response=False)
+    assert r.status_code == 200
+    assert r.json() == {"blocked": True}
+
+
+@pytest.mark.benchmark
+def test_before_request_bare_tuple_short_circuits(session):
+    """#793: a (body, headers, status) tuple from before_request sets the status."""
+    r = get("/sync/before/bare_tuple", should_check_response=False)
+    assert r.status_code == 403
+    assert r.text == "denied"
+
+
+@pytest.mark.benchmark
+def test_after_request_runs_when_before_request_short_circuits(session):
+    """When before_request returns a Response, the handler is skipped but the
+    after_request chain still runs on that response."""
+    r = get("/sync/short_circuit", should_check_response=False)
+    assert r.status_code == 403
+    assert r.text == "blocked"  # early response body, handler did not run
+    assert r.headers.get("after_on_block") == "yes"  # after_request still ran
+
+
+@pytest.mark.benchmark
+@pytest.mark.parametrize(
+    "route",
+    [
+        "/sync/str/const",
+        "/async/str/const",
+        "/sync/dict/const",
+        "/async/dict/const",
+        "/sync/response/const",
+        "/async/response/const",
+    ],
+)
+def test_global_middleware_applied_to_const_routes(route: str, session):
+    r = get(route)
+    assert r.headers.get("global_after") == "global_after_request", f"Global after-request middleware was not applied to const route {route}"
+
+
+@pytest.mark.benchmark
+@pytest.mark.parametrize(
+    "function_type, expected",
+    [
+        pytest.param(
+            "async",
+            "set-in-before",
+            marks=pytest.mark.skipif(
+                sys.version_info < (3, 11),
+                reason="Sharing ContextVar writes across async middleware phases requires loop.create_task(context=...), which is Python 3.11+ (see #1380).",
+            ),
+        ),
+        ("sync", "set-in-sync-before"),
+    ],
+)
+def test_contextvars_propagate_across_hooks(function_type: str, expected: str, session):
+    """Regression test for #1380: `contextvars.ContextVar` writes in
+    `before_request` must be visible to the route handler and to
+    `after_request`. Each request gets a fresh shared context.
+    """
+    r = get(f"/{function_type}/contextvars/route")
+    assert r.text == expected, "Route handler did not observe ContextVar set in before_request"
+    assert r.headers.get("x-ctxvar-after") == expected, "after_request did not observe ContextVar set in before_request"

@@ -2,5 +2,4 @@ target/
 dist/
 __pycache__/
 .pytest_cache/
-integration_tests/
 Cargo.lock

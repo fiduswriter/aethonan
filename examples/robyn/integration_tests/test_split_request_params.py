@@ -1,0 +1,104 @@
+import pytest
+
+from integration_tests.helpers.http_methods_helpers import get, json_post, post
+
+
+@pytest.mark.benchmark
+@pytest.mark.parametrize("function_type", ["sync", "async"])
+@pytest.mark.parametrize("type_route", ["split_request_untyped", "split_request_typed"])
+def test_split_request_params_get_query_params(session, type_route, function_type):
+    r = get(f"/{function_type}/{type_route}/query_params?hello=robyn")
+    assert r.json() == {"hello": ["robyn"]}
+    r = get(f"/{function_type}/{type_route}/query_params?hello=robyn&a=1&b=2")
+    assert r.json() == {"hello": ["robyn"], "a": ["1"], "b": ["2"]}
+    r = get(f"/{function_type}/{type_route}/query_params")
+    assert r.json() == {}
+
+
+@pytest.mark.benchmark
+@pytest.mark.parametrize("function_type", ["sync", "async"])
+@pytest.mark.parametrize("type_route", ["split_request_untyped", "split_request_typed"])
+def test_split_request_params_get_headers(session, type_route, function_type):
+    r = get(f"/{function_type}/{type_route}/headers")
+    assert r.text == "robyn"
+
+
+@pytest.mark.benchmark
+@pytest.mark.parametrize("function_type", ["sync", "async"])
+@pytest.mark.parametrize("type_route", ["split_request_untyped", "split_request_typed"])
+def test_split_request_params_get_path_params(session, type_route, function_type):
+    r = get(f"/{function_type}/{type_route}/path_params/123")
+    assert r.json() == {"id": "123"}
+
+
+@pytest.mark.benchmark
+@pytest.mark.parametrize("function_type", ["sync", "async"])
+@pytest.mark.parametrize("type_route", ["split_request_untyped", "split_request_typed"])
+def test_split_request_params_get_method(session, type_route, function_type):
+    r = get(f"/{function_type}/{type_route}/method")
+    assert r.text == "GET"
+
+
+@pytest.mark.benchmark
+@pytest.mark.parametrize("function_type", ["sync", "async"])
+@pytest.mark.parametrize("type_route", ["split_request_untyped", "split_request_typed"])
+def test_split_request_params_get_body(session, type_route, function_type):
+    res = post(f"/{function_type}/{type_route}/body", data={"hello": "world"})
+    assert res.text == "hello=world"
+
+
+@pytest.mark.benchmark
+@pytest.mark.parametrize("function_type", ["sync", "async"])
+@pytest.mark.parametrize("type_route", ["split_request_untyped", "split_request_typed"])
+def test_split_request_params_get_combined(session, type_route, function_type):
+    res = post(
+        f"/{function_type}/{type_route}/combined?hello=robyn&a=1&b=2",
+        data={"hello": "world"},
+    )
+    out = res.json()
+    assert out["query_params"] == {"hello": ["robyn"], "a": ["1"], "b": ["2"]}
+    assert out["body"] == "hello=world"
+    assert out["method"] == "POST"
+    assert out["url"] == f"/{function_type}/{type_route}/combined"
+    assert out["headers"] == "robyn"
+
+
+@pytest.mark.benchmark
+@pytest.mark.parametrize("function_type", ["sync", "async"])
+def test_split_request_params_typed_untyped_post_combined(session, function_type):
+    res = post(
+        f"/{function_type}/split_request_typed_untyped/combined?hello=robyn&a=1&b=2",
+        data={"hello": "world"},
+    )
+    out = res.json()
+    assert out["query_params"] == {"hello": ["robyn"], "a": ["1"], "b": ["2"]}
+    assert out["body"] == "hello=world"
+    assert out["method"] == "POST"
+    assert out["url"] == f"/{function_type}/split_request_typed_untyped/combined"
+    assert out["headers"] == "robyn"
+
+
+@pytest.mark.benchmark
+@pytest.mark.parametrize("function_type", ["sync", "async"])
+def test_split_request_params_get_combined_failure(session, function_type):
+    # 'vishnu' is an unknown param with no default — now returns 400 (was 500 before easy-access params)
+    # because unresolved params are treated as missing required query params
+    res = post(f"/{function_type}/split_request_typed_untyped/combined/failure?hello=robyn&a=1&b=2", data={"hello": "world"}, should_check_response=False)
+    assert 400 == res.status_code
+
+
+@pytest.mark.benchmark
+@pytest.mark.parametrize("function_type", ["sync", "async"])
+def test_json_body_bare(session, function_type):
+    """Test that bare JsonBody passes the parsed JSON dict to the handler."""
+    res = json_post(f"/{function_type}/json_body/bare", json_data={"hello": "world", "count": 42})
+    assert res.json() == {"hello": "world", "count": 42}
+
+
+@pytest.mark.benchmark
+@pytest.mark.parametrize("function_type", ["sync", "async"])
+def test_json_body_typed(session, function_type):
+    """Test that typed JsonBody subclass passes the parsed JSON dict to the handler."""
+    res = json_post(f"/{function_type}/json_body/typed", json_data={"fahrenheit": 212})
+    result = res.json()
+    assert result["celsius"] == pytest.approx(100.0)
