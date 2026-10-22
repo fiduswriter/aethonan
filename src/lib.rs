@@ -24,6 +24,7 @@ mod ipc;
 mod metrics;
 mod native;
 mod net;
+mod pyolog;
 mod rsgi;
 mod runtime;
 mod serve;

@@ -29,7 +29,7 @@ macro_rules! serve_fn {
             Ret: Future<Output = crate::http::HTTPResponse>,
             Worker<C, A, H, F, M>: WorkerAcceptor<$listener> + Send + 'static,
         {
-            _ = pyo3_log::try_init();
+            _ = crate::pyolog::try_init();
 
             let worker_id = cfg.id;
             log::info!("Started worker-{worker_id}");
@@ -149,7 +149,7 @@ macro_rules! serve_fn {
             M: Clone + Send,
             Worker<C, A, H, F, M>: WorkerAcceptor<$listener> + Send + 'static,
         {
-            _ = pyo3_log::try_init();
+            _ = crate::pyolog::try_init();
 
             let worker_id = cfg.id;
             log::info!("Started worker-{worker_id}");
@@ -301,7 +301,7 @@ macro_rules! serve_fn {
             M: Clone + Send,
             Worker<C, A, H, F, M>: WorkerAcceptor<$listener> + Send + 'static,
         {
-            _ = pyo3_log::try_init();
+            _ = crate::pyolog::try_init();
 
             let worker_id = cfg.id;
             log::info!("Started worker-{worker_id}");
