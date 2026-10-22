@@ -1,0 +1,155 @@
+// Vendored from Robyn (https://github.com/sparckles/Robyn) commit 1170748e — BSD 2-Clause (c) 2021 Sanskar Jethi.
+// Ported from actix-web to the Aethonan rlib (Aethonan: Fidus Writer fork of Granian).
+
+use log::debug;
+use pyo3::prelude::*;
+use pyo3::types::{PyDict, PyList};
+use std::collections::HashMap;
+
+// Custom Multimap class
+#[pyclass(subclass)]
+#[derive(Clone, Debug, Default)]
+pub struct QueryParams {
+    pub queries: HashMap<String, Vec<String>>,
+}
+
+#[pymethods]
+impl QueryParams {
+    #[new]
+    pub fn new() -> Self {
+        QueryParams {
+            queries: HashMap::new(),
+        }
+    }
+
+    pub fn set(&mut self, key: String, value: String) {
+        debug!("Setting key: {} to value: {}", key, value);
+        self.queries.entry(key).or_default().push(value);
+        debug!("Multimap: {:?}", self.queries);
+    }
+
+    pub fn get(&self, key: String, default: Option<String>) -> Option<String> {
+        match self.queries.get(&key) {
+            Some(values) => values.last().cloned(),
+            None => default,
+        }
+    }
+
+    pub fn get_first(&self, key: String) -> Option<String> {
+        match self.queries.get(&key) {
+            Some(values) => values.first().cloned(),
+            None => None,
+        }
+    }
+
+    pub fn empty(&self) -> bool {
+        self.queries.is_empty()
+    }
+
+    pub fn contains(&self, key: String) -> bool {
+        self.queries.contains_key(&key)
+    }
+
+    pub fn get_all(&self, key: String) -> Option<Vec<String>> {
+        self.queries.get(&key).cloned()
+    }
+
+    pub fn keys(&self) -> Vec<String> {
+        self.queries.keys().cloned().collect()
+    }
+
+    pub fn values(&self) -> Vec<String> {
+        // last value per key, consistent with get()
+        self.queries
+            .values()
+            .filter_map(|values| values.last().cloned())
+            .collect()
+    }
+
+    pub fn items(&self) -> Vec<(String, String)> {
+        // (key, last value) pairs, consistent with get()
+        self.queries
+            .iter()
+            .filter_map(|(key, values)| values.last().map(|v| (key.clone(), v.clone())))
+            .collect()
+    }
+
+    pub fn multi_items(&self) -> Vec<(String, String)> {
+        // (key, value) for every value, preserving duplicate keys
+        let mut items = Vec::new();
+        for (key, values) in self.queries.iter() {
+            for value in values {
+                items.push((key.clone(), value.clone()));
+            }
+        }
+        items
+    }
+
+    pub fn extend(&mut self, other: &mut Self) {
+        for (key, values) in other.queries.iter_mut() {
+            for value in values.iter() {
+                self.set(key.clone(), value.clone());
+            }
+        }
+    }
+
+    pub fn to_dict(&self, py: Python) -> PyResult<Py<PyDict>> {
+        let dict = PyDict::new(py);
+        for (key, values) in self.queries.iter() {
+            let values = PyList::new(py, values.iter());
+            dict.set_item(key, values?)?;
+        }
+        Ok(dict.into())
+    }
+
+    pub fn __contains__(&self, key: String) -> bool {
+        self.queries.contains_key(&key)
+    }
+
+    pub fn __repr__(&self) -> String {
+        format!("{:?}", self.queries)
+    }
+}
+
+impl QueryParams {
+    pub fn from_hashmap(map: HashMap<String, Vec<String>>) -> Self {
+        let mut multimap = QueryParams::new();
+        for (key, values) in map {
+            for value in values {
+                multimap.set(key.clone(), value);
+            }
+        }
+        multimap
+    }
+
+    pub fn from_py_dict(py: Python, dict: Py<PyDict>) -> Self {
+        let mut multimap = QueryParams::new();
+        for (key, value) in dict.bind(py).iter() {
+            let key = key.extract::<String>().unwrap();
+            let value = value.extract::<String>().unwrap();
+            multimap.set(key, value);
+        }
+        multimap
+    }
+
+    pub fn contains_key(&self, key: &str) -> bool {
+        self.queries.contains_key(key)
+    }
+
+    pub fn insert(&mut self, key: String, value: Vec<String>) {
+        self.queries.insert(key, value);
+    }
+
+    pub fn get_mut(&mut self, key: &str) -> Option<&Vec<String>> {
+        self.queries.get(key)
+    }
+}
+
+impl FromPyObject<'_, '_> for QueryParams {
+    type Error = PyErr;
+
+    #[inline]
+    fn extract(obj: pyo3::Borrowed<'_, '_, PyAny>) -> Result<Self, Self::Error> {
+        Ok(obj.cast::<QueryParams>()?.try_borrow()?.clone())
+    }
+}

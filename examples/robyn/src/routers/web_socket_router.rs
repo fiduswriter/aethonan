@@ -1,0 +1,53 @@
+// Vendored from Robyn (https://github.com/sparckles/Robyn) commit 1170748e — BSD 2-Clause (c) 2021 Sanskar Jethi.
+// Ported from actix-web to the Aethonan rlib (Aethonan: Fidus Writer fork of Granian).
+
+use parking_lot::RwLock;
+use std::collections::HashMap;
+
+use log::debug;
+
+use crate::types::function_info::FunctionInfo;
+
+/// Contains the thread safe hashmaps of different routes
+type WebSocketRoutes = RwLock<HashMap<String, HashMap<String, FunctionInfo>>>;
+
+pub struct WebSocketRouter {
+    web_socket_routes: WebSocketRoutes,
+}
+
+impl WebSocketRouter {
+    pub fn new() -> Self {
+        Self {
+            web_socket_routes: RwLock::new(HashMap::new()),
+        }
+    }
+
+    #[inline]
+    pub fn get_web_socket_map(&self) -> &WebSocketRoutes {
+        &self.web_socket_routes
+    }
+
+    pub fn add_websocket_route(
+        &self,
+        route: &str,
+        connect_route: &FunctionInfo,
+        close_route: &FunctionInfo,
+        message_route: &FunctionInfo,
+    ) {
+        let table = self.get_web_socket_map();
+
+        let insert_in_router = |function: &FunctionInfo, socket_type: &str| {
+            debug!("socket type is {:?} {:?}", table, route);
+
+            table
+                .write()
+                .entry(route.to_string())
+                .or_default()
+                .insert(socket_type.to_string(), function.clone())
+        };
+
+        insert_in_router(&connect_route, "connect");
+        insert_in_router(&close_route, "close");
+        insert_in_router(&message_route, "message");
+    }
+}

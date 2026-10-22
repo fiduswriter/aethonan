@@ -1,0 +1,23 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "robyn-aethonan"
+version = "0.88.0"
+description = "Robyn (vendored, 0.88.0) with its Rust core ported from actix-web to Aethonan — demonstration example"
+license = { text = "BSD-2-Clause" }
+requires-python = ">=3.10"
+
+[tool.maturin]
+module-name = "robyn.robyn"
+python-source = "."
+# The built cdylib exports both `PyInit_robyn` (for `robyn.robyn`) and
+# `PyInit__aethonan` (for `aethonan._aethonan`); `install.py` moves it over the
+# Aethonan package so a single shared object serves both module names.
+bindings = "pyo3"
+
+[tool.pytest.ini_options]
+markers = [
+  "benchmark: marks tests as benchmarks for performance measurement (deselect with '-m \"not benchmark\"' )",
+]

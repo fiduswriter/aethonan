@@ -1,0 +1,52 @@
+# NOTICE — robyn-aethonan example
+
+This directory is part of the Aethonan project (Fidus Writer fork of Granian) and demonstrates
+embedding Aethonan as a Rust library. It contains a vendored and ported copy of the Robyn
+Python web framework.
+
+## Robyn
+
+- Upstream: https://github.com/sparckles/Robyn
+- Vendored from commit `1170748e` (version 0.88.0)
+- Copyright (c) 2021 Sanskar Jethi and the sparckles project
+- License: BSD 2-Clause (see `LICENSE`)
+
+The Rust core (`src/`) was ported from actix-web to the Aethonan rlib, and the Python package
+(`robyn/`) was minimally adapted to be served by Aethonan's own server classes. Every ported
+source file carries a vendored-from header.
+
+## Granian / Aethonan derived code
+
+The files `src/asyncio.rs`, `src/callbacks.rs` and `src/conversion.rs` (and the design of the
+executor glue) are adapted from Granian (https://github.com/emmett-framework/granian):
+
+- Copyright (c) 2021 Giovanni Barillari
+- License: BSD 3-Clause
+
+Those file-level attribution headers are preserved verbatim.
+
+## Aethonan
+
+Aethonan (https://github.com/fiduswriter/aethonan) is the Fidus Writer fork of Granian and is
+BSD 3-Clause licensed. This example embeds it as a library dependency
+(`aethonan = { path = "../..", package = "aethonan", default-features = false }`).
+
+## The integration tests
+
+`integration_tests/` is a vendored copy of Robyn's own integration test suite (same upstream
+commit, same BSD 2-Clause copyright and license as Robyn above). The test sources themselves
+are unmodified; they run against the ported server.
+
+THIS EXAMPLE IS A DEMONSTRATION FORK-PORT. It is not affiliated with or endorsed by the
+Robyn/sparckles project, and it is not a supported Robyn distribution.
+
+## Patched dependency
+
+`patches/pyo3-async-runtimes` is a vendored copy of the
+[pyo3-async-runtimes](https://github.com/PyO3/pyo3-async-runtimes) crate
+version 0.30.0 (© Andrew J. Westlake, David Hewitt and contributors;
+MIT OR Apache-2.0), carrying a minimal fix (marked `AETHONAN PORT PATCH`) for
+drops of Python heap pointers on unattached runtime threads, required when
+pyo3 0.30 is built with `--cfg pyo3_disable_reference_pool` (the Aethonan
+repository's build configuration, which crates inside the repository
+inherit). The fix is applied through `[patch.crates-io]` in `Cargo.toml`.

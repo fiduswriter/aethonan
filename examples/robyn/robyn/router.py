@@ -1,0 +1,650 @@
+import inspect
+import logging
+from collections.abc import Callable, Mapping
+from functools import wraps
+from types import CoroutineType
+from typing import NamedTuple, is_typeddict
+
+from robyn import status_codes
+from robyn._param_utils import QueryParamValidationError, parse_route_param_names, resolve_individual_params
+from robyn.authentication import AuthenticationHandler, AuthenticationNotConfiguredError
+from robyn.dependency_injection import DependencyMap
+from robyn.jsonify import jsonify
+from robyn.openapi import OpenAPI, RouteOpenAPIMeta
+from robyn.pydantic_support import (
+    PydanticBodyValidationError,
+    check_pydantic_installed_for_handler,
+    detect_pydantic_params,
+    is_pydantic_model,
+    serialize_pydantic_response,
+    validate_pydantic_body,
+)
+from robyn.responses import FileResponse, StreamingResponse
+from robyn.robyn import FunctionInfo, Headers, HttpMethod, Identity, MiddlewareType, QueryParams, Request, Response, Url
+from robyn.types import Body, Files, FormData, IPAddress, JsonBody, Method, PathParams
+
+_logger = logging.getLogger(__name__)
+
+
+# Prebuilt Headers singletons reused across every request so the hot path
+# doesn't allocate a fresh DashMap per response. These objects are passed
+# into `Response(...)` as-is; the Rust side clones them into an independent
+# `Headers` struct during extraction, so server-side header injection never
+# mutates the singleton. Handlers that return a bare dict/list/str/bytes
+# never receive the Response and can't mutate it either.
+_JSON_HEADERS = Headers({"Content-Type": "application/json"})
+_TEXT_HEADERS = Headers({"Content-Type": "text/plain"})
+_REQUEST_PARAM_NAMES = {"r", "req", "request"}
+_PATH_PARAMS_PARAM_NAMES = {"path_params"}
+_PATH_PARAM_ACCESS_TYPES = (Request, PathParams)
+
+
+def lower_http_method(method: HttpMethod):
+    return (str(method))[11:].lower()
+
+
+class Route(NamedTuple):
+    route_type: HttpMethod
+    route: str
+    function: FunctionInfo
+    is_const: bool
+    auth_required: bool
+    openapi_name: str
+    openapi_tags: list[str]
+    openapi_metadata: RouteOpenAPIMeta = RouteOpenAPIMeta()
+
+
+class RouteMiddleware(NamedTuple):
+    middleware_type: MiddlewareType
+    route: str
+    function: FunctionInfo
+    route_type: HttpMethod
+
+
+class GlobalMiddleware(NamedTuple):
+    middleware_type: MiddlewareType
+    function: FunctionInfo
+
+
+class BaseRouter:
+    """Common base for the route registries (HTTP, middleware, websocket).
+
+    Intentionally empty: each registry exposes ``add_route`` with a
+    deliberately different signature, so there is no shared abstract
+    contract to enforce here (#1035).
+    """
+
+
+class Router(BaseRouter):
+    def __init__(self) -> None:
+        super().__init__()
+        self.routes: list[Route] = []
+
+    def _handler_can_access_path_params(self, handler_params: Mapping[str, inspect.Parameter]) -> bool:
+        for param in handler_params.values():
+            if param.annotation in _PATH_PARAM_ACCESS_TYPES:
+                return True
+
+        return bool((_REQUEST_PARAM_NAMES | _PATH_PARAMS_PARAM_NAMES) & set(handler_params))
+
+    def _format_tuple_response(self, res: tuple) -> Response:
+        if len(res) != 3:
+            raise ValueError("Tuple should have 3 elements")
+
+        description, headers, status_code = res
+        formatted = self._format_response(description)
+        if isinstance(formatted, StreamingResponse):
+            raise ValueError("StreamingResponse is not supported in tuple responses")
+        description = formatted.description
+        new_headers: Headers = Headers(headers)
+        if new_headers.contains("Content-Type"):
+            headers.set("Content-Type", new_headers.get("Content-Type"))
+
+        return Response(
+            status_code=status_code,
+            headers=headers,
+            description=description,
+        )
+
+    def _format_response(
+        self,
+        res: dict | list | Response | StreamingResponse | bytes | tuple | str,
+    ) -> Response | StreamingResponse | dict | list | str | bytes:
+        if isinstance(res, Response):
+            return res
+
+        if isinstance(res, StreamingResponse):
+            return res
+
+        pydantic_json = serialize_pydantic_response(res)
+        if pydantic_json is not None:
+            return Response(
+                status_code=status_codes.HTTP_200_OK,
+                headers=_JSON_HEADERS,
+                description=pydantic_json,
+            )
+
+        # Bare dict/list/str/bytes are handled natively in the Rust executor:
+        # it serializes dicts/lists via orjson and wraps str/bytes directly,
+        # skipping the per-request Python-side Response/Headers construction.
+        if isinstance(res, (dict, list, str, bytes)):
+            return res
+
+        if isinstance(res, FileResponse):
+            response: Response = Response(
+                status_code=res.status_code,
+                headers=res.headers,
+                description=res.file_path,
+            )
+            response.file_path = res.file_path
+            return response
+
+        if isinstance(res, tuple):
+            return self._format_tuple_response(tuple(res))
+
+        return Response(
+            status_code=status_codes.HTTP_200_OK,
+            headers=_TEXT_HEADERS,
+            description=str(res).encode("utf-8"),
+        )
+
+    def _apply_response_model(self, result, response_model, default_status_code):
+        """Validate/serialize a dict return through a Pydantic ``response_model``.
+
+        When ``response_model`` is a Pydantic model and the handler returned a
+        plain dict, the dict is validated and re-serialized through the model so
+        the wire response matches the documented schema. Explicit
+        ``Response``/``StreamingResponse`` returns and non-Pydantic models are left
+        untouched.
+        """
+        if response_model is None or not is_pydantic_model(response_model):
+            return result
+        if isinstance(result, (Response, StreamingResponse)):
+            return result
+        if isinstance(result, dict):
+            validated = response_model.model_validate(result)
+            return Response(
+                status_code=default_status_code or status_codes.HTTP_200_OK,
+                headers=_JSON_HEADERS,
+                description=validated.model_dump_json(),
+            )
+        return result
+
+    def _coerce_status_code(self, formatted, default_status_code):
+        """Apply the route's default ``status_code`` to a non-Response return.
+
+        Only plain returns (dict/list/str/bytes) are wrapped — when a handler
+        returns an explicit ``Response``/``StreamingResponse`` its own status code
+        always wins.
+        """
+        if default_status_code is None or isinstance(formatted, (Response, StreamingResponse)):
+            return formatted
+        if isinstance(formatted, (dict, list)):
+            return Response(status_code=default_status_code, headers=_JSON_HEADERS, description=jsonify(formatted))
+        if isinstance(formatted, bytes):
+            return Response(status_code=default_status_code, headers=_TEXT_HEADERS, description=formatted)
+        return Response(status_code=default_status_code, headers=_TEXT_HEADERS, description=str(formatted).encode("utf-8"))
+
+    def add_route(  # type: ignore
+        self,
+        route_type: HttpMethod,
+        endpoint: str,
+        handler: Callable,
+        is_const: bool,
+        auth_required: bool,
+        openapi_name: str,
+        openapi_tags: list[str],
+        exception_handler: Callable | None,
+        injected_dependencies: dict,
+        openapi_metadata: RouteOpenAPIMeta | None = None,
+    ) -> Callable | CoroutineType:
+        # Pre-compute handler signature ONCE at registration time.
+        # This avoids calling inspect.signature() on every request.
+        if openapi_metadata is None:
+            openapi_metadata = RouteOpenAPIMeta()
+        default_status_code = openapi_metadata.status_code
+        response_model = openapi_metadata.response_model
+
+        route_param_names = parse_route_param_names(endpoint)
+        handler_params = inspect.signature(handler).parameters
+        handler_param_names = set(handler_params.keys())
+
+        unused_route_params = set() if self._handler_can_access_path_params(handler_params) else route_param_names - handler_param_names
+        if unused_route_params:
+            _logger.warning(
+                "Route '%s' declares path params %s but handler '%s' doesn't use them",
+                endpoint,
+                unused_route_params,
+                handler.__name__,
+            )
+
+        # Detect Pydantic model params once at registration (zero cost if not used)
+        pydantic_params = detect_pydantic_params(handler_params)
+        check_pydantic_installed_for_handler(handler, pydantic_params)
+
+        if pydantic_params and route_type in (HttpMethod.GET, HttpMethod.HEAD):
+            _logger.warning(
+                "Handler '%s' on %s '%s' uses Pydantic body parameter(s) %s, but %s requests typically do not carry a request body",
+                handler.__name__,
+                route_type,
+                endpoint,
+                list(pydantic_params.keys()),
+                route_type,
+            )
+
+        def wrapped_handler(*args, **kwargs):
+            request = next(filter(lambda it: isinstance(it, Request), args), None)
+
+            if not request or (len(handler_params) == 1 and next(iter(handler_params)) is Request):
+                return handler(*args, **kwargs)
+
+            type_mapping = {
+                "request": Request,
+                "query_params": QueryParams,
+                "headers": Headers,
+                "path_params": PathParams,
+                "body": Body,
+                "method": Method,
+                "url": Url,
+                "form_data": FormData,
+                "files": Files,
+                "ip_addr": IPAddress,
+                "identity": Identity,
+            }
+
+            # Phase 1: Type-annotated request components
+            type_filtered_params = {}
+
+            for handler_param in iter(handler_params):
+                for type_name in type_mapping:
+                    handler_param_type = handler_params[handler_param].annotation
+                    handler_param_name = handler_params[handler_param].name
+                    if handler_param_type is Request:
+                        type_filtered_params[handler_param_name] = request
+                    elif handler_param_type is type_mapping[type_name]:
+                        type_filtered_params[handler_param_name] = getattr(request, type_name)
+                    elif inspect.isclass(handler_param_type):
+                        if issubclass(handler_param_type, JsonBody):
+                            try:
+                                type_filtered_params[handler_param_name] = request.json()
+                            except ValueError as e:
+                                return Response(
+                                    status_code=status_codes.HTTP_400_BAD_REQUEST,
+                                    headers=_JSON_HEADERS,
+                                    description=jsonify({"error": f"Invalid JSON body: {e}"}),
+                                )
+                        elif issubclass(handler_param_type, Body):
+                            type_filtered_params[handler_param_name] = request.body
+                        elif issubclass(handler_param_type, QueryParams):
+                            type_filtered_params[handler_param_name] = request.query_params
+                        elif is_typeddict(handler_param_type):
+                            try:
+                                type_filtered_params[handler_param_name] = request.json()
+                            except ValueError as e:
+                                return Response(
+                                    status_code=status_codes.HTTP_400_BAD_REQUEST,
+                                    headers=_JSON_HEADERS,
+                                    description=jsonify({"error": f"Invalid JSON body: {e}"}),
+                                )
+
+            # Phase 1.5: Pydantic model body params (only runs if handler uses pydantic)
+            if pydantic_params:
+                for param_name, model_class in pydantic_params.items():
+                    if param_name in type_filtered_params:
+                        continue
+                    validated, error = validate_pydantic_body(model_class, request.body)
+                    if error is not None:
+                        raise PydanticBodyValidationError(error)
+                    type_filtered_params[param_name] = validated
+
+            # Phase 2: Reserved-name request components
+            request_components = {
+                "r": request,
+                "req": request,
+                "request": request,
+                "query_params": request.query_params,
+                "headers": request.headers,
+                "path_params": request.path_params,
+                "body": request.body,
+                "method": request.method,
+                "url": request.url,
+                "ip_addr": request.ip_addr,
+                "identity": request.identity,
+                "form_data": request.form_data,
+                "files": request.files,
+                "router_dependencies": injected_dependencies["router_dependencies"],
+                "global_dependencies": injected_dependencies["global_dependencies"],
+                **kwargs,
+            }
+
+            name_filtered_params = {k: v for k, v in request_components.items() if k in handler_params and k not in type_filtered_params}
+
+            filtered_params = dict(**type_filtered_params, **name_filtered_params)
+
+            # Phase 3: Individual path/query param resolution
+            unresolved_names = set(handler_params) - set(filtered_params)
+            if unresolved_names:
+                unresolved = {name: handler_params[name] for name in unresolved_names}
+                individual_params = resolve_individual_params(
+                    unresolved,
+                    request.query_params,
+                    request.path_params,
+                    route_param_names,
+                )
+                filtered_params.update(individual_params)
+
+            return handler(**filtered_params)
+
+        @wraps(handler)
+        async def async_inner_handler(*args, **kwargs):
+            try:
+                result = await wrapped_handler(*args, **kwargs)
+                if response_model is not None or default_status_code is not None:
+                    result = self._apply_response_model(result, response_model, default_status_code)
+                    response = self._coerce_status_code(self._format_response(result), default_status_code)
+                else:
+                    response = self._format_response(result)
+            except QueryParamValidationError as err:
+                response = Response(
+                    status_code=status_codes.HTTP_400_BAD_REQUEST,
+                    headers=_TEXT_HEADERS,
+                    description=str(err),
+                )
+            except PydanticBodyValidationError as err:
+                response = Response(
+                    status_code=status_codes.HTTP_422_UNPROCESSABLE_ENTITY,
+                    headers=_JSON_HEADERS,
+                    description=jsonify(err.error_detail),
+                )
+            except Exception as err:
+                if exception_handler is None:
+                    raise
+                response = self._format_response(
+                    exception_handler(err),
+                )
+            return response
+
+        @wraps(handler)
+        def inner_handler(*args, **kwargs):
+            try:
+                result = wrapped_handler(*args, **kwargs)
+                if response_model is not None or default_status_code is not None:
+                    result = self._apply_response_model(result, response_model, default_status_code)
+                    response = self._coerce_status_code(self._format_response(result), default_status_code)
+                else:
+                    response = self._format_response(result)
+            except QueryParamValidationError as err:
+                response = Response(
+                    status_code=status_codes.HTTP_400_BAD_REQUEST,
+                    headers=_TEXT_HEADERS,
+                    description=str(err),
+                )
+            except PydanticBodyValidationError as err:
+                response = Response(
+                    status_code=status_codes.HTTP_422_UNPROCESSABLE_ENTITY,
+                    headers=_JSON_HEADERS,
+                    description=jsonify(err.error_detail),
+                )
+            except Exception as err:
+                if exception_handler is None:
+                    raise
+                response = self._format_response(
+                    exception_handler(err),
+                )
+            return response
+
+        params = dict(handler_params)
+
+        new_injected_dependencies = {}
+        for dependency in injected_dependencies:
+            if dependency in params:
+                new_injected_dependencies[dependency] = injected_dependencies[dependency]
+            else:
+                _logger.debug(f"Dependency {dependency} is not used in the handler {handler.__name__}")
+
+        if inspect.iscoroutinefunction(handler):
+            function = FunctionInfo(
+                async_inner_handler,
+                True,
+                len(params),
+                params,
+                new_injected_dependencies,
+            )
+            self.routes.append(Route(route_type, endpoint, function, is_const, auth_required, openapi_name, openapi_tags, openapi_metadata))
+            return async_inner_handler
+        else:
+            function = FunctionInfo(
+                inner_handler,
+                False,
+                len(params),
+                params,
+                new_injected_dependencies,
+            )
+            self.routes.append(Route(route_type, endpoint, function, is_const, auth_required, openapi_name, openapi_tags, openapi_metadata))
+            return inner_handler
+
+    def prepare_routes_openapi(self, openapi: OpenAPI, included_routers: list) -> None:
+        for route in self.routes:
+            openapi.add_openapi_path_obj(
+                lower_http_method(route.route_type),
+                route.route,
+                route.openapi_name,
+                route.openapi_tags,
+                route.function.handler,
+                auth_required=route.auth_required,
+                meta=route.openapi_metadata,
+            )
+
+        # TODO! after include_routes does not immediately merge all the routes
+        # for router in included_routers:
+        #    for route in router:
+        #        openapi.add_openapi_path_obj(lower_http_method(route.route_type), route.route, route.openapi_name, route.openapi_tags, route.function.handler)
+
+    def get_routes(self) -> list[Route]:
+        return self.routes
+
+
+def _cast_before_request_return(result):
+    """Cast a ``before_request`` hook's return value.
+
+    Returning a ``Request`` continues processing; returning a ``Response``
+    short-circuits. A bare value (dict/list/str/bytes/3-tuple) is cast to a
+    short-circuiting ``Response`` so users don't have to construct a full
+    ``Response`` object themselves (#793). ``None`` and ``Request``/``Response``
+    are passed through unchanged.
+    """
+    if result is None or isinstance(result, (Request, Response, StreamingResponse)):
+        return result
+    if isinstance(result, (dict, list)):
+        return Response(status_code=status_codes.HTTP_200_OK, headers=_JSON_HEADERS, description=jsonify(result))
+    if isinstance(result, bytes):
+        return Response(status_code=status_codes.HTTP_200_OK, headers=_TEXT_HEADERS, description=result)
+    if isinstance(result, tuple):
+        if len(result) != 3:
+            raise ValueError("A tuple returned from before_request must have 3 elements: (description, headers, status_code)")
+        description, headers, status_code = result
+        if isinstance(description, (dict, list)):
+            body = jsonify(description)
+        elif isinstance(description, bytes):
+            body = description
+        else:
+            body = str(description).encode("utf-8")
+        return Response(status_code=status_code, headers=Headers(headers), description=body)
+    return Response(status_code=status_codes.HTTP_200_OK, headers=_TEXT_HEADERS, description=str(result).encode("utf-8"))
+
+
+class MiddlewareRouter(BaseRouter):
+    def __init__(self, dependencies: DependencyMap = DependencyMap()) -> None:
+        super().__init__()
+        self.global_middlewares: list[GlobalMiddleware] = []
+        self.route_middlewares: list[RouteMiddleware] = []
+        self.authentication_handler: AuthenticationHandler | None = None
+        self.dependencies = dependencies
+
+    def set_authentication_handler(self, authentication_handler: AuthenticationHandler):
+        self.authentication_handler = authentication_handler
+
+    def add_route(  # type: ignore
+        self,
+        middleware_type: MiddlewareType,
+        endpoint: str,
+        route_type: HttpMethod,
+        handler: Callable,
+        injected_dependencies: dict,
+    ) -> Callable:
+        params = dict(inspect.signature(handler).parameters)
+
+        new_injected_dependencies = {}
+        for dependency in injected_dependencies:
+            if dependency in params:
+                new_injected_dependencies[dependency] = injected_dependencies[dependency]
+            else:
+                _logger.debug(f"Dependency {dependency} is not used in the middleware handler {handler.__name__}")
+
+        function = FunctionInfo(
+            handler,
+            inspect.iscoroutinefunction(handler),
+            len(params),
+            params,
+            new_injected_dependencies,
+        )
+        self.route_middlewares.append(RouteMiddleware(middleware_type, endpoint, function, route_type))
+        return handler
+
+    def add_auth_middleware(self, endpoint: str, route_type: HttpMethod):
+        """
+        This method adds an authentication middleware to the specified endpoint.
+
+        The wrapper is async so that ``AuthenticationHandler.authenticate()`` may
+        be either a regular method or an ``async def`` coroutine — the latter
+        lets authentication use async ORMs / HTTP clients (#1157, #1296). A
+        synchronous ``authenticate()`` is awaited only if it returns an
+        awaitable, so it carries no extra cost.
+        """
+
+        injected_dependencies: dict = {}
+
+        def decorator(handler):
+            @wraps(handler)
+            async def inner_handler(request: Request, *args):
+                if not self.authentication_handler:
+                    raise AuthenticationNotConfiguredError()
+                identity = self.authentication_handler.authenticate(request)
+                if inspect.isawaitable(identity):
+                    identity = await identity
+                if identity is None:
+                    return self.authentication_handler.unauthorized_response
+                request.identity = identity
+
+                return request
+
+            self.add_route(
+                MiddlewareType.BEFORE_REQUEST,
+                endpoint,
+                route_type,
+                inner_handler,
+                injected_dependencies,
+            )
+            return inner_handler
+
+        return decorator
+
+    # These inner functions are basically a wrapper around the closure(decorator) being returned.
+    # They take a handler, convert it into a closure and return the arguments.
+    # Arguments are returned as they could be modified by the middlewares.
+    def add_middleware(self, middleware_type: MiddlewareType, endpoint: str | None) -> Callable[..., None]:
+        """
+        This method adds a middleware to the router.
+
+        Rules:
+            If endpoint is None, the middleware is added as a global middleware.
+            If endpoint is provided, the middleware is added to that specific endpoint.
+            Only None is supported for global middleware, empty string is not supported.
+            empty string or "/" is considered as root endpoint.
+
+        Args:
+            middleware_type: The type of middleware to add (before_request, after_request).
+            endpoint: The endpoint to add the middleware to. If None, the middleware is added as a global middleware.
+
+        Returns:
+            A decorator that takes a handler and adds it as a middleware.
+        """
+        # no dependency injection here
+        injected_dependencies: dict = {}
+
+        # before_request hooks may return a bare value (dict/str/...) that gets
+        # cast to a short-circuiting Response (#793); after_request hooks return
+        # a Response and are passed through unchanged.
+        cast_return = middleware_type == MiddlewareType.BEFORE_REQUEST
+
+        def inner(handler):
+            @wraps(handler)
+            async def async_inner_handler(*args, **kwargs):
+                result = await handler(*args, **kwargs)
+                return _cast_before_request_return(result) if cast_return else result
+
+            @wraps(handler)
+            def inner_handler(*args, **kwargs):
+                result = handler(*args, **kwargs)
+                return _cast_before_request_return(result) if cast_return else result
+
+            if endpoint is not None:
+                if inspect.iscoroutinefunction(handler):
+                    self.add_route(
+                        middleware_type,
+                        endpoint,
+                        HttpMethod.GET,
+                        async_inner_handler,
+                        injected_dependencies,
+                    )
+                else:
+                    self.add_route(middleware_type, endpoint, HttpMethod.GET, inner_handler, injected_dependencies)
+            else:
+                params = dict(inspect.signature(handler).parameters)
+
+                if inspect.iscoroutinefunction(handler):
+                    self.global_middlewares.append(
+                        GlobalMiddleware(
+                            middleware_type,
+                            FunctionInfo(
+                                async_inner_handler,
+                                True,
+                                len(params),
+                                params,
+                                injected_dependencies,
+                            ),
+                        )
+                    )
+                else:
+                    self.global_middlewares.append(
+                        GlobalMiddleware(
+                            middleware_type,
+                            FunctionInfo(
+                                inner_handler,
+                                False,
+                                len(params),
+                                params,
+                                injected_dependencies,
+                            ),
+                        )
+                    )
+
+        return inner
+
+    def get_route_middlewares(self) -> list[RouteMiddleware]:
+        return self.route_middlewares
+
+    def get_global_middlewares(self) -> list[GlobalMiddleware]:
+        return self.global_middlewares
+
+
+class WebSocketRouter(BaseRouter):
+    def __init__(self) -> None:
+        super().__init__()
+        self.routes: dict[str, dict] = {}
+
+    def add_route(self, endpoint: str, handlers: dict) -> None:  # type: ignore
+        self.routes[endpoint] = handlers
+
+    def get_routes(self) -> dict[str, dict]:
+        return self.routes

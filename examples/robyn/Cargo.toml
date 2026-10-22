@@ -1,0 +1,50 @@
+[package]
+name = "robyn-aethonan"
+version = "0.88.0"
+edition = "2024"
+publish = false
+description = "Robyn's Python web framework core ported from actix-web to the Aethonan rlib (example crate)"
+license = "BSD-2-Clause"
+
+[lib]
+name = "robyn"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+aethonan = { path = "../..", package = "aethonan", default-features = false }
+anyhow = "1.0"
+cookie = "0.18"
+dashmap = "6"
+futures = "0.3"
+http-body-util = "0.1"
+hyper = { version = "1.12", features = ["http1", "http2", "server"] }
+log = "0.4"
+matchit = "0.7"
+mime_guess = "2.0"
+multer = "3"
+once_cell = "1"
+parking_lot = "0.12"
+percent-encoding = "2.3"
+pyo3 = { version = "=0.30", features = ["anyhow", "extension-module"] }
+pyo3-async-runtimes = { version = "=0.30", features = ["tokio-runtime"] }
+serde_json = "1.0"
+tokio = { version = "1.51", features = ["full"] }
+tokio-tungstenite = "0.30"
+tokio-util = "0.7"
+uuid = { version = "1", features = ["v4"] }
+
+# The iteration loop matters more than the last few percents of performance
+# here: a thin LTO keeps the link time of the extension module low, while
+# Aethonan itself is not recompiled (it is cached as a library dependency).
+[profile.release]
+lto = false
+
+# pyo3-async-runtimes 0.30.0 lets `TaskLocals`/future handles drop on
+# unattached runtime threads at the end of `future_into_py_with_locals`,
+# which panics under pyo3 0.30 built with `--cfg
+# pyo3_disable_reference_pool` (the Aethonan repository sets that cfg in its
+# root .cargo/config.toml, which this example crate inherits). The vendored
+# copy in patches/ carries a minimal, marked fix; see the AETHONAN PORT
+# PATCH comments in patches/pyo3-async-runtimes/src/generic.rs.
+[patch.crates-io]
+pyo3-async-runtimes = { path = "patches/pyo3-async-runtimes" }
