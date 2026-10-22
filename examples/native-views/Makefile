@@ -1,5 +1,5 @@
 # The extension module must be built against the same Python interpreter the
-# Granian package is installed for.
+# Aethonan package is installed for.
 #
 # In a working copy, the dependencies are usually installed in a local virtual
 # environment (the `.venv` directory created by `uv`, which is not tracked by
@@ -18,7 +18,7 @@ build:
 
 .PHONY: install
 install: build
-	$(PYTHON) install.py target/release/libgranian_native_views.so
+	$(PYTHON) install.py target/release/libaethonan_native_views.so
 
 .PHONY: clean
 clean:

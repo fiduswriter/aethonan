@@ -1,16 +1,16 @@
-# Granian native views
+# Aethonan native views
 
-An example of a crate embedding [Granian](https://github.com/emmett-framework/granian) as a
+An example of a crate embedding [Aethonan](https://github.com/fiduswriter/aethonan) as a
 Rust library in order to serve *native routes*: paths handled directly by the Rust side,
 without ever reaching the Python application.
 
-The crate builds a Python extension module named `granian._granian`, which **replaces** the
-one shipped with the Granian package: the Python side is entirely stock Granian, while the
+The crate builds a Python extension module named `aethonan._aethonan`, which **replaces** the
+one shipped with the Aethonan package: the Python side is entirely stock Aethonan, while the
 native routes are provided here.
 
 ## Usage
 
-The extension module must be built against the same Python interpreter the Granian package
+The extension module must be built against the same Python interpreter the Aethonan package
 is installed for. In a working copy, the dependencies are usually installed in a local
 virtual environment (the `.venv` directory created by `uv`, which is not tracked by the
 repository):
@@ -19,7 +19,7 @@ repository):
 # build the extension module
 make build PYTHON=.venv/bin/python
 
-# install it over the stock Granian one
+# install it over the stock Aethonan one
 make install PYTHON=.venv/bin/python
 ```
 
@@ -30,10 +30,10 @@ make build
 make install
 ```
 
-The extension module is then served by the stock Granian server:
+The extension module is then served by the stock Aethonan server:
 
 ```bash
-granian --interface rsgi --port 8000 package:app
+aethonan --interface rsgi --port 8000 package:app
 ```
 
 ```
@@ -43,27 +43,27 @@ $ curl http://127.0.0.1:8000/native_view
 
 ## How it works
 
-The crate depends on Granian as a library and provides the `granian._granian` module itself:
+The crate depends on Aethonan as a library and provides the `aethonan._aethonan` module itself:
 
 ```rust
 use pyo3::prelude::*;
 
 #[pyo3::pymodule(gil_used = false)]
-fn _granian(py: Python, module: &Bound<PyModule>) -> PyResult<()> {
-    // Initialise the Granian module: this provides the workers, the callback
+fn _aethonan(py: Python, module: &Bound<PyModule>) -> PyResult<()> {
+    // Initialise the Aethonan module: this provides the workers, the callback
     // scheduler and everything else the Python side expects to find.
-    granian::init_py_module(py, module)?;
+    aethonan::init_py_module(py, module)?;
 
     // Register the native routes: they are served by this crate, without ever
     // reaching the Python application.
-    granian::register_native_route(
+    aethonan::register_native_route(
         "/native_view",
-        granian::NativeRouteKind::Http,
+        aethonan::NativeRouteKind::Http,
         views::info_view,
     );
-    granian::register_native_route(
+    aethonan::register_native_route(
         "/native_ws",
-        granian::NativeRouteKind::Websocket,
+        aethonan::NativeRouteKind::Websocket,
         consumers::broadcast_consumer(),
     );
 
@@ -72,11 +72,11 @@ fn _granian(py: Python, module: &Bound<PyModule>) -> PyResult<()> {
 ```
 
 Since the routes are registered by this crate, the dependency direction is the one that
-matters: **Granian is a library dependency, this crate is the artifact**. Changing a handler
-here recompiles this crate only, Granian is not recompiled at all.
+matters: **Aethonan is a library dependency, this crate is the artifact**. Changing a handler
+here recompiles this crate only, Aethonan is not recompiled at all.
 
 > **Note:** the `default-features = false` in the `Cargo.toml` is required: the
-> `python-module` feature provides the `granian._granian` module, which is provided by this
+> `python-module` feature provides the `aethonan._aethonan` module, which is provided by this
 > crate instead.
 
 ## Handlers
@@ -86,7 +86,7 @@ response:
 
 ```rust
 use futures::future::BoxFuture;
-use granian::{HTTPRequest, HTTPResponse, NativeContext};
+use aethonan::{HTTPRequest, HTTPResponse, NativeContext};
 
 pub fn info_view(req: HTTPRequest, ctx: NativeContext) -> BoxFuture<'static, HTTPResponse> {
     Box::pin(async move {
@@ -95,19 +95,19 @@ pub fn info_view(req: HTTPRequest, ctx: NativeContext) -> BoxFuture<'static, HTT
 }
 ```
 
-The websockets handshake is performed by Granian, the handler is responsible for the
+The websockets handshake is performed by Aethonan, the handler is responsible for the
 upgraded stream:
 
 ```rust
 let mut req = req;
-match granian::ws::upgrade_intent(&mut req, None) {
+match aethonan::ws::upgrade_intent(&mut req, None) {
     Ok((builder, ws)) => {
         ctx.rt.spawn(async move {
             if let Ok(stream) = ws.await {
                 // handle the stream
             }
         });
-        builder.body(granian::http::empty_body()).unwrap()
+        builder.body(aethonan::http::empty_body()).unwrap()
     }
     Err(_) => bad_request(),
 }

@@ -3,8 +3,8 @@ import asyncio
 import httpx
 import pytest
 
-from granian._granian import BUILD_GIL
-from granian.server.embed import Server as EmbeddedGranian
+from aethonan._aethonan import BUILD_GIL
+from aethonan.server.embed import Server as EmbeddedGranian
 
 
 async def app(scope, protocol):

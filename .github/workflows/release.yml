@@ -147,7 +147,7 @@ jobs:
     needs: [ sdist, wheels ]
     environment:
       name: pypi
-      url: https://pypi.org/p/granian
+      url: https://pypi.org/p/aethonan
     permissions:
       id-token: write
 

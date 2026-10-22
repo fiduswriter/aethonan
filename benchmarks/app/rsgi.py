@@ -90,11 +90,11 @@ def app(scope, proto):
     return handler(scope, proto)
 
 
-def granian(wrk, thr):
-    from granian import Granian
+def aethonan(wrk, thr):
+    from aethonan import Granian
 
     Granian('rsgi:app', workers=int(wrk), threads=int(thr), interface='rsgi').serve()
 
 
 if __name__ == '__main__':
-    granian(sys.argv[1], sys.argv[2])
+    aethonan(sys.argv[1], sys.argv[2])

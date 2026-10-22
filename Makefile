@@ -1,9 +1,9 @@
 .DEFAULT_GOAL := all
-pysources = granian tests
+pysources = aethonan tests
 
 .PHONY: build-dev
 build-dev:
-	@rm -f granian/*.so
+	@rm -f aethonan/*.so
 	uv sync --group all
 	uv run maturin develop --uv
 

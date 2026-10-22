@@ -7,7 +7,7 @@
 use futures::future::BoxFuture;
 use http_body_util::BodyExt;
 
-use granian::{HTTPRequest, HTTPResponse, NativeContext};
+use aethonan::{HTTPRequest, HTTPResponse, NativeContext};
 
 /// Serve a JSON payload describing the request.
 pub fn info_view(

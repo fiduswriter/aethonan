@@ -1,5 +1,5 @@
 [project]
-name = 'granian'
+name = 'aethonan'
 authors = [
     { name = 'Giovanni Barillari', email = 'g@baro.dev' }
 ]
@@ -57,12 +57,13 @@ winloop = [
     'winloop>=0.2.2; sys_platform == "win32" and platform_python_implementation == "CPython"',
 ]
 
-all = ['granian[dotenv,pname,reload]']
+all = ['aethonan[dotenv,pname,reload]']
 
 [project.urls]
-Homepage = 'https://github.com/emmett-framework/granian'
+Homepage = 'https://github.com/fiduswriter/aethonan'
 Funding = 'https://github.com/sponsors/gi0baro'
-Source = 'https://github.com/emmett-framework/granian'
+Source = 'https://github.com/fiduswriter/aethonan'
+Fork = 'https://github.com/emmett-framework/granian'
 
 [dependency-groups]
 build = [
@@ -87,14 +88,14 @@ all = [
 ]
 
 [project.scripts]
-granian = 'granian:cli.entrypoint'
+aethonan = 'aethonan:cli.entrypoint'
 
 [build-system]
 requires = ['maturin>=1.14.0,<2']
 build-backend = 'maturin'
 
 [tool.maturin]
-module-name = 'granian._granian'
+module-name = 'aethonan._aethonan'
 bindings = 'pyo3'
 
 [tool.ruff]
@@ -130,10 +131,10 @@ quote-style = 'single'
 [tool.ruff.isort]
 combine-as-imports = true
 lines-after-imports = 2
-known-first-party = ['granian', 'tests']
+known-first-party = ['aethonan', 'tests']
 
 [tool.ruff.per-file-ignores]
-'granian/_granian.pyi' = ['I001']
+'aethonan/_aethonan.pyi' = ['I001']
 'tests/**' = ['B018', 'S110', 'S501']
 
 [tool.pytest.ini_options]

@@ -341,7 +341,7 @@ def option(*param_decls: str, cls: type[click.Option] | None = None, **attrs: An
 @option(
     '--env-files',
     type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True, path_type=pathlib.Path),
-    help='Environment file(s) to load (requires granian[dotenv] extra)',
+    help='Environment file(s) to load (requires aethonan[dotenv] extra)',
     multiple=True,
 )
 @option(
@@ -380,7 +380,7 @@ def option(*param_decls: str, cls: type[click.Option] | None = None, **attrs: An
 @option(
     '--reload/--no-reload',
     default=False,
-    help="Enable auto reload on application's files changes (requires granian[reload] extra)",
+    help="Enable auto reload on application's files changes (requires aethonan[reload] extra)",
 )
 @option(
     '--reload-paths',
@@ -424,7 +424,7 @@ def option(*param_decls: str, cls: type[click.Option] | None = None, **attrs: An
 )
 @option(
     '--process-name',
-    help='Set a custom name for processes (requires granian[pname] extra)',
+    help='Set a custom name for processes (requires aethonan[pname] extra)',
 )
 @option(
     '--pid-file',
@@ -603,4 +603,4 @@ def cli(
 
 
 def entrypoint():
-    cli(auto_envvar_prefix='GRANIAN')
+    cli(auto_envvar_prefix='AETHONAN')

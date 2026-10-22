@@ -18,7 +18,7 @@ enum WSGIBodyBuffering {
     Size(usize),
 }
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(crate) struct WSGIBody {
     rt: RuntimeRef,
     inner: Arc<AsyncMutex<http_body_util::BodyStream<body::Incoming>>>,

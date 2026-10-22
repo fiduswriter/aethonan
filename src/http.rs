@@ -9,7 +9,7 @@ pub type HTTPRequest = hyper::Request<hyper::body::Incoming>;
 pub type HTTPResponseBody = http_body_util::combinators::BoxBody<Bytes, anyhow::Error>;
 pub type HTTPResponse = hyper::Response<HTTPResponseBody>;
 
-pub(crate) const HV_SERVER: HeaderValue = HeaderValue::from_static("granian");
+pub(crate) const HV_SERVER: HeaderValue = HeaderValue::from_static("aethonan");
 
 #[derive(Clone)]
 pub(crate) enum HTTPProto {

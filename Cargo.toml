@@ -1,16 +1,16 @@
 [package]
-name = "granian"
+name = "aethonan"
 version = "2.8.5"
-description = "A Rust HTTP server for Python applications"
+description = "A Rust HTTP server for Python applications (a fork of Granian with native routes and websockets over HTTP/2)"
 authors = ["Giovanni Barillari <g@baro.dev>"]
 license = "BSD-3-Clause"
 edition = "2024"
 
-keywords = ["web", "asyncio"]
+keywords = ["web", "asyncio", "aethonan"]
 
 readme = "README.md"
-homepage = "https://github.com/emmett-framework/granian"
-repository = "https://github.com/emmett-framework/granian"
+homepage = "https://github.com/fiduswriter/aethonan"
+repository = "https://github.com/fiduswriter/aethonan"
 
 include = [
     "/Cargo.toml",
@@ -19,7 +19,7 @@ include = [
     "/LICENSE",
     "/README.md",
     "/src",
-    "/granian",
+    "/aethonan",
     "/tests",
     "!__pycache__",
     "!tests/.pytest_cache",
@@ -27,7 +27,7 @@ include = [
 ]
 
 [lib]
-name = "_granian"
+name = "_aethonan"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
@@ -68,9 +68,9 @@ pyo3-build-config = "=0.30"
 
 [features]
 default = ["python-module"]
-# Provides the `granian._granian` Python module.
-# It must be disabled by crates embedding Granian as a library and providing
-# their own module, to avoid the `PyInit__granian` symbol being defined twice.
+# Provides the `aethonan._aethonan` Python module.
+# It must be disabled by crates embedding Aethonan as a library and providing
+# their own module, to avoid the `PyInit__aethonan` symbol being defined twice.
 python-module = []
 jemalloc = ["dep:tikv-jemallocator"]
 mimalloc = ["dep:mimalloc"]

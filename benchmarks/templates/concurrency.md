@@ -1,4 +1,4 @@
-# Granian benchmarks
+# Aethonan benchmarks
 
 {{ include './_helpers.tpl' }}
 
@@ -7,7 +7,7 @@
 Run at: {{ =datetime.datetime.fromtimestamp(data.run_at).strftime('%a %d %b %Y, %H:%M') }}    
 Environment: {{ =benv }} (CPUs: {{ =data.cpu }})    
 Python version: {{ =data.pyver }}    
-Granian version: {{ =data.granian }}    
+Aethonan version: {{ =data.aethonan }}    
 
 Same methodology of the main benchmarks applies.
 

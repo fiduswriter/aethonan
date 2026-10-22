@@ -1,4 +1,4 @@
-from .._granian import BUILD_GIL
+from .._aethonan import BUILD_GIL
 from .mp import MPServer as MPServer
 from .mt import MTServer as MTServer
 

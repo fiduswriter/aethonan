@@ -14,7 +14,7 @@ use super::tls::{
 };
 use super::wsgi::serve::WSGIWorker;
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(crate) struct WorkerSignal {
     pub rx: Mutex<Option<crossbeam_channel::Receiver<bool>>>,
     tx: crossbeam_channel::Sender<bool>,

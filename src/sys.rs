@@ -9,7 +9,7 @@ use std::{
 };
 use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System};
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 struct ProcInfoCollector {
     sys: Arc<Mutex<System>>,
 }

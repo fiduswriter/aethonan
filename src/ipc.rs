@@ -24,7 +24,7 @@ use tokio::{
 use pyo3::prelude::*;
 
 #[cfg(not(Py_GIL_DISABLED))]
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(crate) struct IPCReceiverHandle {
     pub id: usize,
     #[cfg(unix)]
@@ -124,7 +124,7 @@ impl IPCReceiverHandle {
 }
 
 #[cfg(not(Py_GIL_DISABLED))]
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(crate) struct IPCSenderHandle {
     #[cfg(unix)]
     pub fd: std::sync::Mutex<Option<OwnedFd>>,
@@ -168,11 +168,11 @@ impl IPCSenderHandle {
 }
 
 #[cfg(Py_GIL_DISABLED)]
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(crate) struct IPCReceiverHandle {}
 
 #[cfg(Py_GIL_DISABLED)]
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(crate) struct IPCSenderHandle {}
 
 #[cfg(not(Py_GIL_DISABLED))]

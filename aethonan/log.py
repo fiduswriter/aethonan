@@ -48,16 +48,16 @@ LOGGING_CONFIG = {
         'access': {'formatter': 'access', 'class': 'logging.StreamHandler', 'stream': 'ext://sys.stdout'},
     },
     'loggers': {
-        '_granian': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
-        'granian.access': {'handlers': ['access'], 'level': 'INFO', 'propagate': False},
+        '_aethonan': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
+        'aethonan.access': {'handlers': ['access'], 'level': 'INFO', 'propagate': False},
     },
 }
 
 DEFAULT_ACCESSLOG_FMT = '[%(time)s] %(addr)s - "%(method)s %(path)s %(protocol)s" %(status)d %(dt_ms).3f'
 
 # NOTE: to be consistent with the Rust module logger name
-logger = logging.getLogger('_granian')
-access_logger = logging.getLogger('granian.access')
+logger = logging.getLogger('_aethonan')
+access_logger = logging.getLogger('aethonan.access')
 
 
 def configure_logging(level: LogLevels, config: dict[str, Any] | None = None, enabled: bool = True):
@@ -66,7 +66,7 @@ def configure_logging(level: LogLevels, config: dict[str, Any] | None = None, en
     if config:
         log_config.update(config)
 
-    log_config['loggers'].setdefault('_granian', {})['level'] = log_levels_map[level]
+    log_config['loggers'].setdefault('_aethonan', {})['level'] = log_levels_map[level]
     logging.config.dictConfig(log_config)
 
     if not enabled:

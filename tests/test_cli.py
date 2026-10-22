@@ -1,7 +1,7 @@
 import click
 import pytest
 
-from granian.cli import Duration
+from aethonan.cli import Duration
 
 
 @pytest.mark.parametrize(

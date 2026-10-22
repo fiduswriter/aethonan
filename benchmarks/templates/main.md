@@ -1,15 +1,15 @@
-# Granian benchmarks
+# Aethonan benchmarks
 
 {{ include './_helpers.tpl' }}
 
 Run at: {{ =datetime.datetime.fromtimestamp(data.run_at).strftime('%a %d %b %Y, %H:%M') }}    
 Environment: {{ =benv }} (CPUs: {{ =data.cpu }})    
 Python version: {{ =data.pyver }}    
-Granian version: {{ =data.granian }}
+Aethonan version: {{ =data.aethonan }}
 
 ### Methodology
 
-Unless otherwise specified in the specific benchmark section, Granian is run:
+Unless otherwise specified in the specific benchmark section, Aethonan is run:
 
 - Using default configuration, thus:
   - 1 worker

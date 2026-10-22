@@ -145,9 +145,9 @@ fn response_501() -> HTTPResponse {
 
 /// Register the reference native routes.
 ///
-/// These are only registered by the Granian module itself, they are meant to
+/// These are only registered by the Aethonan module itself, they are meant to
 /// serve as a reference implementation (and to be covered by the test suite).
-/// Crates embedding Granian as a library are expected to register their own
+/// Crates embedding Aethonan as a library are expected to register their own
 /// routes instead.
 #[cfg(feature = "python-module")]
 pub(crate) fn register_reference_routes() {

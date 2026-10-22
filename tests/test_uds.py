@@ -10,7 +10,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from granian import Granian
+from aethonan import Granian
 
 
 IS_WIN = sys.platform == 'win32'
@@ -28,7 +28,7 @@ async def _server(
     certs_path = Path.cwd() / 'tests' / 'fixtures' / 'tls'
     kwargs = {
         'interface': interface,
-        'uds': Path('granian.sock'),
+        'uds': Path('aethonan.sock'),
         'loop': 'asyncio',
         'blocking_threads': 1,
         'runtime_mode': runtime_mode,
@@ -83,7 +83,7 @@ def server_tls(request):
 
 @pytest.fixture(scope='function')
 def http_client():
-    transport = httpx.HTTPTransport(uds='granian.sock', verify=False)
+    transport = httpx.HTTPTransport(uds='aethonan.sock', verify=False)
     return httpx.Client(transport=transport)
 
 
@@ -93,7 +93,7 @@ def http_client():
 @pytest.mark.parametrize('runtime_mode', ['mt', 'st'])
 async def test_asgi(asgi_server, runtime_mode, http_client):
     async with asgi_server(runtime_mode, ws=False):
-        res = http_client.get('http://granian/info?test=true')
+        res = http_client.get('http://aethonan/info?test=true')
 
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
@@ -106,7 +106,7 @@ async def test_asgi(asgi_server, runtime_mode, http_client):
     assert data['method'] == 'GET'
     assert data['path'] == '/info'
     assert data['query_string'] == 'test=true'
-    assert data['headers']['host'] == 'granian'
+    assert data['headers']['host'] == 'aethonan'
     assert 'http.response.pathsend' in data['extensions']
     assert data['state']['global'] == 'test'
 
@@ -117,7 +117,7 @@ async def test_asgi(asgi_server, runtime_mode, http_client):
 @pytest.mark.parametrize('runtime_mode', ['mt', 'st'])
 async def test_rsgi(rsgi_server, runtime_mode, http_client):
     async with rsgi_server(runtime_mode, ws=False):
-        res = http_client.get('http://granian/info?test=true')
+        res = http_client.get('http://aethonan/info?test=true')
 
     assert res.status_code == 200
     assert res.headers['content-type'] == 'application/json'
@@ -130,7 +130,7 @@ async def test_rsgi(rsgi_server, runtime_mode, http_client):
     assert data['method'] == 'GET'
     assert data['path'] == '/info'
     assert data['query_string'] == 'test=true'
-    assert data['headers']['host'] == 'granian'
+    assert data['headers']['host'] == 'aethonan'
     assert not data['authority']
 
 
@@ -142,7 +142,7 @@ async def test_wsgi(wsgi_server, runtime_mode, http_client):
     payload = 'body_payload'
     async with wsgi_server(runtime_mode):
         res = http_client.post(
-            'http://granian/info?test=true', content=payload, headers=[('test', 'val1'), ('test', 'val2')]
+            'http://aethonan/info?test=true', content=payload, headers=[('test', 'val1'), ('test', 'val2')]
         )
 
     assert res.status_code == 200
@@ -153,7 +153,7 @@ async def test_wsgi(wsgi_server, runtime_mode, http_client):
     assert data['method'] == 'POST'
     assert data['path'] == '/info'
     assert data['query_string'] == 'test=true'
-    assert data['headers']['HTTP_HOST'] == 'granian'
+    assert data['headers']['HTTP_HOST'] == 'aethonan'
     assert data['content_length'] == str(len(payload))
     assert data['headers']['HTTP_TEST'] == 'val1,val2'
 
@@ -164,7 +164,7 @@ async def test_wsgi(wsgi_server, runtime_mode, http_client):
 @pytest.mark.parametrize('runtime_mode', ['mt', 'st'])
 async def test_https(server_tls, runtime_mode, http_client):
     async with server_tls(runtime_mode, ws=False):
-        res = http_client.get('https://granian/info?test=true')
+        res = http_client.get('https://aethonan/info?test=true')
 
     assert res.status_code == 200
     data = res.json()
@@ -180,7 +180,7 @@ async def test_uds_default_file_permission(asgi_server, runtime_mode):
     os.umask(current_umask)
 
     async with asgi_server(runtime_mode, ws=False):
-        assert stat.S_IMODE(os.stat('granian.sock').st_mode) == 0o777 - current_umask
+        assert stat.S_IMODE(os.stat('aethonan.sock').st_mode) == 0o777 - current_umask
 
 
 @pytest.mark.asyncio
@@ -189,4 +189,4 @@ async def test_uds_default_file_permission(asgi_server, runtime_mode):
 @pytest.mark.parametrize('runtime_mode', ['mt', 'st'])
 async def test_uds_configurable_file_permission(asgi_server, runtime_mode):
     async with asgi_server(runtime_mode, ws=False, uds_permissions=0o666):
-        assert stat.S_IMODE(os.stat('granian.sock').st_mode) == 0o666
+        assert stat.S_IMODE(os.stat('aethonan.sock').st_mode) == 0o666

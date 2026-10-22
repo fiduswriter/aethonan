@@ -1,4 +1,4 @@
-# Granian benchmarks
+# Aethonan benchmarks
 
 {{ include './_helpers.tpl' }}
 
@@ -7,11 +7,11 @@
 Run at: {{ =datetime.datetime.fromtimestamp(data.run_at).strftime('%a %d %b %Y, %H:%M') }}    
 Environment: {{ =benv }} (CPUs: {{ =data.cpu }})    
 Python version: {{ =data.pyver }}    
-Granian version: {{ =data.granian }}
+Aethonan version: {{ =data.aethonan }}
 
 ### Methodology
 
-Unless otherwise specified in the specific benchmark section, Granian is run:
+Unless otherwise specified in the specific benchmark section, Aethonan is run:
 
 - Using default configuration, thus:
   - 1 worker
@@ -22,7 +22,7 @@ Unless otherwise specified in the specific benchmark section, Granian is run:
 
 Tests are peformed using `oha` utility, with the concurrency specified in the specific test. The test run for 10 seconds, preceeded by a *primer* run at concurrency 8 for 4 seconds, and a *warmup* run at the maximum configured concurrency for the test for 3 seconds.
 
-All the async servers – including Granian – are using `uvloop` for the asyncio event-loop implementation.
+All the async servers – including Aethonan – are using `uvloop` for the asyncio event-loop implementation.
 
 All the reported 3rd party servers were installed using the latest available version at the time of the run.
 
@@ -37,14 +37,14 @@ The *echo* benchmark consists of an HTTP POST request with a 10KB plain-text bod
 
 ### WSGI
 
-Granian is run with `--blocking-threads 1`.
+Aethonan is run with `--blocking-threads 1`.
 
 {{ _data = data.results["vs_wsgi"] }}
 {{ include './_vs_table.tpl' }}
 
 ### HTTP/2
 
-Granian is run with `--http 2` and `--runtime-threads 2`.
+Aethonan is run with `--http 2` and `--runtime-threads 2`.
 
 {{ _data = data.results["vs_http2"] }}
 {{ include './_vs_table.tpl' }}
@@ -53,7 +53,7 @@ Granian is run with `--http 2` and `--runtime-threads 2`.
 
 The benchmark performs an HTTP GET request returning a ~50KB JPEG image. While on *pathsend* the implementation is entirely provided by the underlying protocol, in all the other cases the entirety of the file is read and collected in memory and thus returned as a single byte string.
 
-Granian is run with `--runtime-blocking-threads 1`.
+Aethonan is run with `--runtime-blocking-threads 1`.
 
 {{ _data = data.results["vs_files"] }}
 {{ include './_vs_table.tpl' }}
@@ -70,7 +70,7 @@ Plain text response comparison simulating *long* I/O waits (10ms and 100ms).
 
 Websocket broadcasting comparison with concurrent clients sending a predefined amount of messages and receiving those messages from all the connected clients. The benchmark takes the time required for the test to run and compute the relevant throughput (in messages per second).
 
-Granian is run with `--ws` and `--runtime-threads 2`.
+Aethonan is run with `--ws` and `--runtime-threads 2`.
 
 {{ _data = wsdata.results["vs_ws"] }}
 {{ include './_vs_ws_table.tpl' }}

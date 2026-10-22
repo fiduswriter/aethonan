@@ -6,7 +6,7 @@ from asyncio.tasks import (
 )
 from functools import partial
 
-from ._granian import CallbackScheduler as _BaseCBScheduler
+from ._aethonan import CallbackScheduler as _BaseCBScheduler
 
 
 def _future_watcher_wrapper(inner):

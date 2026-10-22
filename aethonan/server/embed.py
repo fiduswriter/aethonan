@@ -7,8 +7,8 @@ from functools import wraps
 from pathlib import Path
 from typing import Any
 
+from .._aethonan import ASGIWorker, RSGIWorker, WorkerSignal
 from .._futures import _future_watcher_wrapper, _new_cbscheduler
-from .._granian import ASGIWorker, RSGIWorker, WorkerSignal
 from .._imports import dotenv
 from .._internal import load_env
 from .._types import SSLCtx
@@ -414,7 +414,7 @@ class Server(AbstractServer[AsyncWorker]):
         self.wrks.clear()
 
     def startup(self, spawn_target, target_loader):
-        logger.info('Starting granian (embedded)')
+        logger.info('Starting aethonan (embedded)')
         self._init_shared_socket()
         proto = 'https' if self.ssl_ctx[0] else 'http'
         logger.info(f'Listening at: {proto}://{self._bind_addr_fmt}')
@@ -436,7 +436,7 @@ class Server(AbstractServer[AsyncWorker]):
                 await self._reload(spawn_target, target_loader)
 
     async def shutdown(self, exit_code=0):
-        logger.info('Shutting down granian')
+        logger.info('Shutting down aethonan')
         await self._stop_workers()
         self._call_hooks(self.hooks_shutdown)
         if self.bind_uds and self.bind_uds.exists():
@@ -494,7 +494,7 @@ class Server(AbstractServer[AsyncWorker]):
                 logger.info('Websockets are not supported on HTTP/2 only, ignoring')
 
         if self.env_files and dotenv is None:
-            logger.error('Environment file(s) usage requires the granian[dotenv] extra')
+            logger.error('Environment file(s) usage requires the aethonan[dotenv] extra')
             raise ConfigurationError('env_files')
 
         if self.blocking_threads_idle_timeout < 5 or self.blocking_threads_idle_timeout > 600:

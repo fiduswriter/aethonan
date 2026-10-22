@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 360">
+  <!-- Aethonan logo: a wing in flight (winged horse, simplified) + wordmark -->
+  <g>
+    <!-- three layered feathers sweeping right, longest on top like a wing in flight -->
+    <path fill="#8fb8dd" d="M95,175 Q160,98 265,110 Q174,134 95,175 Z"/>
+    <path fill="#6b99cf" d="M95,215 Q183,131 315,140 Q199,165 95,215 Z"/>
+    <path fill="#4a7dbd" d="M95,255 Q205,169 360,175 Q221,203 95,255 Z"/>
+    <!-- shoulder -->
+    <circle cx="95" cy="215" r="18" fill="#16324f"/>
+  </g>
+  <text x="425" y="215" font-family="DejaVu Sans, sans-serif" font-size="100" font-weight="bold" fill="#16324f" letter-spacing="1">aethonan</text>
+  <text x="429" y="268" font-family="DejaVu Sans, sans-serif" font-size="23" fill="#4a7dbd">a fork of Granian · Rust HTTP server for Python</text>
+</svg>

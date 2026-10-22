@@ -12,8 +12,8 @@ from functools import partial
 from pathlib import Path
 from typing import Any, Generic, TypeVar
 
+from .._aethonan import MetricsAggregator, MetricsExporter, WorkerSignal
 from .._compat import _PY_312, _PYV
-from .._granian import MetricsAggregator, MetricsExporter, WorkerSignal
 from .._imports import dotenv, setproctitle, watchfiles
 from .._internal import build_env_loader, load_target
 from .._signals import set_main_signals
@@ -484,7 +484,7 @@ class AbstractServer(Generic[WT]):
 
     def startup(self, spawn_target, target_loader):
         self.pid = os.getpid()
-        logger.info(f'Starting granian (main PID: {self.pid})')
+        logger.info(f'Starting aethonan (main PID: {self.pid})')
         self._write_pidfile()
         set_main_signals(self.signal_handler_interrupt, self.signal_handler_reload)
         self._init_shared_socket()
@@ -504,7 +504,7 @@ class AbstractServer(Generic[WT]):
             self._start_metrics()
 
     def shutdown(self, exit_code=0):
-        logger.info('Shutting down granian')
+        logger.info('Shutting down aethonan')
 
         if self.metrics_enabled:
             self._stop_metrics()
@@ -513,7 +513,7 @@ class AbstractServer(Generic[WT]):
         self._call_hooks(self.hooks_shutdown)
         self._unlink_pidfile()
 
-        logger.info('Granian shutdown completed, see ya!')
+        logger.info('Aethonan shutdown completed, see ya!')
 
         if not exit_code and self.interrupt_children:
             exit_code = 1
@@ -594,7 +594,7 @@ class AbstractServer(Generic[WT]):
 
     def _serve_with_reloader(self, spawn_target, target_loader):
         if watchfiles is None:
-            logger.error('Using --reload requires the granian[reload] extra')
+            logger.error('Using --reload requires the aethonan[reload] extra')
             sys.exit(1)
 
         # Use given or default filter rules
@@ -661,7 +661,7 @@ class AbstractServer(Generic[WT]):
                 self.workers = 1
                 logger.warn(
                     'Due to a bug in Windows unblocking socket implementation '
-                    "granian can't support multiple workers on this platform. "
+                    "aethonan can't support multiple workers on this platform. "
                     'Number of workers will now fallback to 1.'
                 )
 
@@ -679,14 +679,14 @@ class AbstractServer(Generic[WT]):
                 logger.info('Websockets are not supported on WSGI, ignoring')
 
         if setproctitle is not None:
-            self.process_name = self.process_name or (f'granian {self.interface} {self._bind_addr_fmt} {self.target}')
+            self.process_name = self.process_name or (f'aethonan {self.interface} {self._bind_addr_fmt} {self.target}')
             setproctitle.setproctitle(self.process_name)
         elif self.process_name is not None:
-            logger.error('Setting process name requires the granian[pname] extra')
+            logger.error('Setting process name requires the aethonan[pname] extra')
             raise ConfigurationError('process_name')
 
         if self.env_files and dotenv is None:
-            logger.error('Environment file(s) usage requires the granian[dotenv] extra')
+            logger.error('Environment file(s) usage requires the aethonan[dotenv] extra')
             raise ConfigurationError('env_files')
 
         if self.workers_lifetime is not None:

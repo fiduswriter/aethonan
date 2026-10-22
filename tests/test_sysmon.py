@@ -1,6 +1,6 @@
 import os
 
-from granian._granian import ProcInfoCollector
+from aethonan._aethonan import ProcInfoCollector
 
 
 def test_procinfo_collector():

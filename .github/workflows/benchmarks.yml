@@ -49,7 +49,7 @@ jobs:
         manylinux: auto
         container: off
     - run: |
-        export _whl=$(ls target/wheels/granian-*.whl)
+        export _whl=$(ls target/wheels/aethonan-*.whl)
         pip install $_whl
     - name: benchmark
       working-directory: ./benchmarks
@@ -87,7 +87,7 @@ jobs:
         manylinux: auto
         container: off
     - run: |
-        export _whl=$(ls target/wheels/granian-*.whl)
+        export _whl=$(ls target/wheels/aethonan-*.whl)
         pip install $_whl
     - name: deps
       run: |
@@ -123,7 +123,7 @@ jobs:
         manylinux: auto
         container: off
     - run: |
-        export _whl=$(ls target/wheels/granian-*.whl)
+        export _whl=$(ls target/wheels/aethonan-*.whl)
         pip install $_whl
     - name: deps
       run: |
@@ -174,10 +174,10 @@ jobs:
         python3.11 -m venv .venv311
         python3.12 -m venv .venv312
         python3.13 -m venv .venv313
-        .venv310/bin/pip install $(ls target/wheels/granian-*-cp310-*.whl)
-        .venv311/bin/pip install $(ls target/wheels/granian-*-cp311-*.whl)
-        .venv312/bin/pip install $(ls target/wheels/granian-*-cp312-*.whl)
-        .venv313/bin/pip install $(ls target/wheels/granian-*-cp313-*.whl)
+        .venv310/bin/pip install $(ls target/wheels/aethonan-*-cp310-*.whl)
+        .venv311/bin/pip install $(ls target/wheels/aethonan-*-cp311-*.whl)
+        .venv312/bin/pip install $(ls target/wheels/aethonan-*-cp312-*.whl)
+        .venv313/bin/pip install $(ls target/wheels/aethonan-*-cp313-*.whl)
     - name: benchmark
       env:
         WORKSPACE: ${{ github.workspace }}

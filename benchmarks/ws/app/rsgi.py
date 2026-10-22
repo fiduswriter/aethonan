@@ -1,6 +1,6 @@
 import asyncio
 
-from granian.rsgi import WebsocketMessageType
+from aethonan.rsgi import WebsocketMessageType
 
 
 clients = set()

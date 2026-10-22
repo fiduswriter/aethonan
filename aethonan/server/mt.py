@@ -5,8 +5,8 @@ from collections.abc import Callable
 from functools import wraps
 from typing import Any
 
+from .._aethonan import ASGIWorker, RSGIWorker, WorkerSignal, WSGIWorker
 from .._futures import _future_watcher_wrapper, _new_cbscheduler
-from .._granian import ASGIWorker, RSGIWorker, WorkerSignal, WSGIWorker
 from .._loops import close_active_loop, loops
 from .._types import SSLCtx
 from ..asgi import LifespanProtocol, _callback_wrapper as _asgi_call_wrap
@@ -46,7 +46,7 @@ class WorkerThread(AbstractWorker):
         return wrapped
 
     def _spawn(self, target, args):
-        self.inner = threading.Thread(name='granian-worker', target=target, args=args)
+        self.inner = threading.Thread(name='aethonan-worker', target=target, args=args)
         self._alive = True
 
     def _id(self):
@@ -362,7 +362,7 @@ class MTServer(AbstractServer[WorkerThread]):
         try:
             assert sys._is_gil_enabled() is False
         except Exception:
-            logger.error('Cannot run a free-threaded Granian build with GIL enabled')
+            logger.error('Cannot run a free-threaded Aethonan build with GIL enabled')
             raise FatalError('gil')
 
     def _serve(self, spawn_target, target_loader):

@@ -104,11 +104,11 @@ async def async_app(scope, receive, send):
     return await handler(scope, receive, send)
 
 
-def granian(wrk, thr):
-    from granian import Granian
+def aethonan(wrk, thr):
+    from aethonan import Granian
 
     Granian('asgi:app', workers=int(wrk), threads=int(thr), interface='asgi').serve()
 
 
 if __name__ == '__main__':
-    granian(sys.argv[1], sys.argv[2])
+    aethonan(sys.argv[1], sys.argv[2])

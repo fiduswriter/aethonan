@@ -38,6 +38,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "aethonan"
+version = "2.8.5"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "ciborium",
+ "crossbeam-channel",
+ "encoding_rs",
+ "futures",
+ "futures-util",
+ "http-body-util",
+ "hyper",
+ "hyper-util",
+ "interprocess",
+ "itertools",
+ "log",
+ "mimalloc",
+ "mime_guess",
+ "pem",
+ "percent-encoding",
+ "pin-project-lite",
+ "pkcs8",
+ "pyo3",
+ "pyo3-build-config",
+ "pyo3-log",
+ "rustls-pemfile",
+ "serde",
+ "socket2",
+ "sysinfo",
+ "tikv-jemallocator",
+ "tls-listener",
+ "tokio",
+ "tokio-stream",
+ "tokio-tungstenite",
+ "tokio-util",
+]
+
+[[package]]
 name = "anyhow"
 version = "1.0.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -465,44 +503,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2eecf2d5dc9b66b732b97707a0210906b1d30523eb773193ab777c0c84b3e8d5"
 dependencies = [
  "polyval",
-]
-
-[[package]]
-name = "granian"
-version = "2.8.5"
-dependencies = [
- "anyhow",
- "bytes",
- "ciborium",
- "crossbeam-channel",
- "encoding_rs",
- "futures",
- "futures-util",
- "http-body-util",
- "hyper",
- "hyper-util",
- "interprocess",
- "itertools",
- "log",
- "mimalloc",
- "mime_guess",
- "pem",
- "percent-encoding",
- "pin-project-lite",
- "pkcs8",
- "pyo3",
- "pyo3-build-config",
- "pyo3-log",
- "rustls-pemfile",
- "serde",
- "socket2",
- "sysinfo",
- "tikv-jemallocator",
- "tls-listener",
- "tokio",
- "tokio-stream",
- "tokio-tungstenite",
- "tokio-util",
 ]
 
 [[package]]

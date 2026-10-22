@@ -2,7 +2,7 @@
 //! Python.
 //!
 //! This is the Rust counterpart of a Django (Channels) consumer: the handshake
-//! is performed by Granian, the messages are handled here.
+//! is performed by Aethonan, the messages are handled here.
 
 use std::{
     collections::HashMap,
@@ -18,7 +18,7 @@ use http_body_util::BodyExt;
 use tokio::sync::mpsc;
 use tokio_tungstenite::tungstenite::Message;
 
-use granian::{HTTPRequest, HTTPResponse, NativeContext};
+use aethonan::{HTTPRequest, HTTPResponse, NativeContext};
 
 type Clients = Arc<Mutex<HashMap<u64, mpsc::UnboundedSender<Message>>>>;
 
@@ -38,11 +38,11 @@ pub fn broadcast_consumer(
 
         Box::pin(async move {
             let mut req = req;
-            if !granian::ws::is_upgrade_request(&req) {
+            if !aethonan::ws::is_upgrade_request(&req) {
                 return bad_request();
             }
 
-            match granian::ws::upgrade_intent(&mut req, None) {
+            match aethonan::ws::upgrade_intent(&mut req, None) {
                 Ok((builder, ws)) => {
                     let client_id = counter.fetch_add(1, Ordering::Relaxed);
                     ctx.rt.spawn(async move {
@@ -54,7 +54,7 @@ pub fn broadcast_consumer(
                         }
                     });
 
-                    builder.body(granian::http::empty_body()).unwrap()
+                    builder.body(aethonan::http::empty_body()).unwrap()
                 }
                 Err(err) => {
                     log::info!("Native websockets handshake failed with {err:?}");
@@ -76,7 +76,7 @@ fn bad_request() -> HTTPResponse {
         .unwrap()
 }
 
-async fn session(client_id: u64, stream: granian::ws::WSStream, clients: Clients) {
+async fn session(client_id: u64, stream: aethonan::ws::WSStream, clients: Clients) {
     let (mut sink, mut source) = stream.split();
     let (tx, mut rx) = mpsc::unbounded_channel::<Message>();
 

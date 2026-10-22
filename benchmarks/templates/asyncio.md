@@ -1,4 +1,4 @@
-# Granian benchmarks
+# Aethonan benchmarks
 
 {{ include './_helpers.tpl' }}
 
@@ -7,7 +7,7 @@
 {{ _common_data = globals().get("datal") }}
 Run at: {{ =datetime.datetime.fromtimestamp(_common_data.run_at).strftime('%a %d %b %Y, %H:%M') }}    
 Environment: {{ =benv }} (CPUs: {{ =_common_data.cpu }})    
-Granian version: {{ =_common_data.granian }}
+Aethonan version: {{ =_common_data.aethonan }}
 
 Same methodology of the main benchmarks applies.
 
@@ -28,7 +28,7 @@ Comparison between different AsyncIO event loops on async protocols.
 
 ### Task implementation
 
-Comparison between Granian Rust AsyncIO task implementation and stdlib one on ASGI protocol.
+Comparison between Aethonan Rust AsyncIO task implementation and stdlib one on ASGI protocol.
 
 | Python version | Request | Total requests | RPS | avg latency | max latency |
 | --- | --- | --- | --- | --- | --- |

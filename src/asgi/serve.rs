@@ -8,7 +8,7 @@ use crate::net::{ListenerSpec, SocketHolder};
 use crate::serve::gen_serve_match;
 use crate::workers::{WorkerConfig, WorkerSignal};
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub struct ASGIWorker {
     config: WorkerConfig,
 }

@@ -1,7 +1,7 @@
 import signal
 import sys
 
-from ._granian import WorkerSignal
+from ._aethonan import WorkerSignal
 
 
 def _get_signals():

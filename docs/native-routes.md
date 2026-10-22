@@ -93,7 +93,7 @@ automatically when any native websockets route is registered.
 The routes are registered by the code building the extension module:
 
 ```rust
-granian::register_native_route("/ws", granian::NativeRouteKind::Websocket, handler);
+aethonan::register_native_route("/ws", aethonan::NativeRouteKind::Websocket, handler);
 ```
 
 Granian itself registers a couple of *reference* routes (`/native_view` and `/native_ws`),
@@ -102,22 +102,22 @@ used by the test suite as a reference implementation.
 ### Embedding Granian as a library
 
 The package is built as both a `cdylib` and an `rlib`, so that it can be embedded in other
-Rust projects. Crates doing so provide the `granian._granian` module themselves, and
+Rust projects. Crates doing so provide the `aethonan._aethonan` module themselves, and
 register their own native routes:
 
 ```rust
 use pyo3::prelude::*;
 
 #[pyo3::pymodule(gil_used = false)]
-fn _granian(py: Python, module: &Bound<PyModule>) -> PyResult<()> {
-    granian::init_py_module(py, module)?;
-    granian::register_native_route("/ws", granian::NativeRouteKind::Websocket, handler);
+fn _aethonan(py: Python, module: &Bound<PyModule>) -> PyResult<()> {
+    aethonan::init_py_module(py, module)?;
+    aethonan::register_native_route("/ws", aethonan::NativeRouteKind::Websocket, handler);
     Ok(())
 }
 ```
 
 The `python-module` feature (enabled by default) provides the module: it must be disabled
-when the module is provided by the embedding crate, in order to avoid the `PyInit__granian`
+when the module is provided by the embedding crate, in order to avoid the `PyInit__aethonan`
 symbol being defined twice.
 
 A complete example is available in `examples/native-views`.

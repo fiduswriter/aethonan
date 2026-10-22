@@ -1,4 +1,4 @@
-# Granian benchmarks
+# Aethonan benchmarks
 
 {{ include './_helpers.tpl' }}
 
@@ -7,9 +7,9 @@
 {{ _common_data = globals().get(f"data{pyvb}") }}
 Run at: {{ =datetime.datetime.fromtimestamp(_common_data.run_at).strftime('%a %d %b %Y, %H:%M') }}    
 Environment: {{ =benv }} (CPUs: {{ =_common_data.cpu }})    
-Granian version: {{ =_common_data.granian }}    
+Aethonan version: {{ =_common_data.aethonan }}    
 
-Comparison between different Python versions of Granian application protocols using 4bytes plain text response.    
+Comparison between different Python versions of Aethonan application protocols using 4bytes plain text response.    
 Bytes and string response are reported for every protocol just to report the difference with RSGI protocol.    
 ASGI and WSGI responses are always returned as bytes by the application.    
 The "echo" request is a 4bytes POST request responding with the same body.

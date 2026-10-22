@@ -76,7 +76,7 @@ impl WorkerMetrics {
 
 pub(crate) type ArcWorkerMetrics = Arc<WorkerMetrics>;
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(crate) struct MetricsAggregator {
     data_m: MainMetrics,
     data_w: Arc<Mutex<Vec<MetricsData>>>,
@@ -89,7 +89,7 @@ impl MetricsAggregator {
     }
 
     fn format_metrics(&self) -> String {
-        let prefix = "granian_";
+        let prefix = "aethonan_";
         let mut all: Vec<String> = vec![
             format!("# TYPE {prefix}workers_spawns counter"),
             format!(
@@ -176,7 +176,7 @@ impl MetricsAggregator {
     }
 }
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(crate) struct MetricsExporter {
     aggregator: Py<MetricsAggregator>,
 }

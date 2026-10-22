@@ -1,18 +1,18 @@
 [package]
-name = "granian-native-views"
+name = "aethonan-native-views"
 version = "0.1.0"
 edition = "2024"
 publish = false
-description = "Example of a crate embedding Granian as a library to serve native routes"
+description = "Example of a crate embedding Aethonan as a library to serve native routes"
 license = "BSD-3-Clause"
 
 [lib]
-name = "granian_native_views"
+name = "aethonan_native_views"
 crate-type = ["cdylib"]
 
 [dependencies]
 futures = "0.3"
-granian = { path = "../..", package = "granian", default-features = false }
+aethonan = { path = "../..", default-features = false }
 http-body-util = "0.1"
 log = "0.4"
 hyper = { version = "1.12", features = ["http1", "http2", "server"] }
@@ -22,6 +22,6 @@ tokio-tungstenite = "0.30"
 
 # The iteration loop matters more than the last few percents of performance
 # here: a thin LTO keeps the link time of the extension module low, while
-# Granian itself is not recompiled (it is cached as a library dependency).
+# Aethonan itself is not recompiled (it is cached as a library dependency).
 [profile.release]
 lto = false

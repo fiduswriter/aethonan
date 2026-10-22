@@ -17,7 +17,7 @@ use crate::{
 
 const RSGI_PROTO_VERSION: &str = "1.6";
 
-#[pyclass(frozen, from_py_object, module = "granian._granian")]
+#[pyclass(frozen, from_py_object, module = "aethonan._aethonan")]
 #[derive(Clone)]
 pub(crate) struct RSGIHeaders {
     inner: HeaderMap,
@@ -104,7 +104,7 @@ impl RSGIHeaders {
 
 macro_rules! rsgi_scope_cls {
     ($name:ident, $proto:expr) => {
-        #[pyclass(frozen, module = "granian._granian")]
+        #[pyclass(frozen, module = "aethonan._aethonan")]
         pub(crate) struct $name {
             http_version: Version,
             scheme: HTTPProto,
@@ -346,7 +346,7 @@ enum WebsocketMessageType {
     Text = 2,
 }
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(super) struct WebsocketInboundCloseMessage {
     #[pyo3(get)]
     kind: usize,
@@ -360,7 +360,7 @@ impl WebsocketInboundCloseMessage {
     }
 }
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(super) struct WebsocketInboundBytesMessage {
     #[pyo3(get)]
     kind: usize,
@@ -377,7 +377,7 @@ impl WebsocketInboundBytesMessage {
     }
 }
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(super) struct WebsocketInboundTextMessage {
     #[pyo3(get)]
     kind: usize,

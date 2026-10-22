@@ -7,7 +7,7 @@ use crate::{asyncio::copy_context, conversion::FutureResultToPy};
 pub(crate) type PyCBScheduler = Py<CallbackScheduler>;
 pub(crate) type ArcCBScheduler = Arc<PyCBScheduler>;
 
-#[pyclass(frozen, subclass, module = "granian._granian")]
+#[pyclass(frozen, subclass, module = "aethonan._aethonan")]
 pub(crate) struct CallbackScheduler {
     pub cb: Py<PyAny>,
     #[pyo3(get)]
@@ -297,7 +297,7 @@ impl CallbackSchedulerState {
     }
 }
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 struct CallbackSchedulerWaker {
     state: Arc<CallbackSchedulerState>,
 }
@@ -316,7 +316,7 @@ impl CallbackSchedulerWaker {
     }
 }
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 struct CallbackSchedulerStep {
     state: Arc<CallbackSchedulerState>,
 }
@@ -328,7 +328,7 @@ impl CallbackSchedulerStep {
     }
 }
 
-#[pyclass(frozen, freelist = 128, module = "granian._granian")]
+#[pyclass(frozen, freelist = 128, module = "aethonan._aethonan")]
 pub(crate) struct PyEmptyAwaitable;
 
 #[pymethods]
@@ -346,7 +346,7 @@ impl PyEmptyAwaitable {
     }
 }
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(crate) struct PyDoneAwaitable {
     result: PyResult<Py<PyAny>>,
 }
@@ -375,7 +375,7 @@ impl PyDoneAwaitable {
     }
 }
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(crate) struct PyErrAwaitable {
     result: PyResult<()>,
 }
@@ -401,7 +401,7 @@ impl PyErrAwaitable {
     }
 }
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(crate) struct PyIterAwaitable {
     result: OnceLock<PyResult<Py<PyAny>>>,
 }
@@ -449,7 +449,7 @@ enum PyFutureAwaitableState {
     Cancelled = 2,
 }
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(crate) struct PyFutureAwaitable {
     state: atomic::AtomicU8,
     result: OnceLock<PyResult<Py<PyAny>>>,

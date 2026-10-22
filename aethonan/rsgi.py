@@ -2,7 +2,7 @@ import time
 from enum import Enum
 from functools import wraps
 
-from ._granian import (
+from ._aethonan import (
     RSGIHeaders as Headers,
     RSGIHTTPProtocol as HTTPProtocol,  # noqa: F401
     RSGIProtocolClosed as ProtocolClosed,  # noqa: F401

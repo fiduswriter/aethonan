@@ -10,7 +10,7 @@ use crate::{
     workers::{WorkerConfig, WorkerSignal},
 };
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub struct WSGIWorker {
     config: WorkerConfig,
 }

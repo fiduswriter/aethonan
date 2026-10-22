@@ -2,7 +2,7 @@ import json
 import os
 import pathlib
 
-from granian.rsgi import HTTPProtocol, Scope, WebsocketMessageType, WebsocketProtocol
+from aethonan.rsgi import HTTPProtocol, Scope, WebsocketMessageType, WebsocketProtocol
 
 
 async def info(scope: Scope, protocol: HTTPProtocol):

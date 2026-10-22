@@ -8,8 +8,7 @@ from collections.abc import Callable
 from functools import wraps
 from typing import Any
 
-from .._futures import _future_watcher_wrapper, _new_cbscheduler
-from .._granian import (
+from .._aethonan import (
     ASGIWorker,
     IPCReceiverHandle,
     IPCSenderHandle,
@@ -19,6 +18,7 @@ from .._granian import (
     WorkerSignal,
     WSGIWorker,
 )
+from .._futures import _future_watcher_wrapper, _new_cbscheduler
 from .._internal import load_env
 from .._types import SSLCtx
 from ..asgi import LifespanProtocol, _callback_wrapper as _asgi_call_wrap
@@ -71,7 +71,7 @@ class WorkerProcess(AbstractWorker):
             *args,
             **kwargs,
         ):
-            from granian._loops import loops
+            from aethonan._loops import loops
 
             if process_name:
                 setproctitle.setproctitle(f'{process_name} worker-{worker_id}')
@@ -96,7 +96,7 @@ class WorkerProcess(AbstractWorker):
 
     def _spawn(self, target, args):
         self.inner = multiprocessing.get_context(self._spawn_method).Process(
-            name='granian-worker', target=target, args=args
+            name='aethonan-worker', target=target, args=args
         )
 
     def _id(self):
@@ -137,7 +137,7 @@ class MPServer(AbstractServer[WorkerProcess]):
         scope_opts: dict[str, Any],
         metrics: Any,
     ):
-        from granian._signals import set_loop_signals
+        from aethonan._signals import set_loop_signals
 
         wcallback = _future_watcher_wrapper(_asgi_call_wrap(callback, scope_opts, {}, log_access_fmt))
         shutdown_event = set_loop_signals(loop)
@@ -201,7 +201,7 @@ class MPServer(AbstractServer[WorkerProcess]):
         scope_opts: dict[str, Any],
         metrics: Any,
     ):
-        from granian._signals import set_loop_signals
+        from aethonan._signals import set_loop_signals
 
         lifespan_handler = LifespanProtocol(callback)
         wcallback = _future_watcher_wrapper(
@@ -274,7 +274,7 @@ class MPServer(AbstractServer[WorkerProcess]):
         scope_opts: dict[str, Any],
         metrics: Any,
     ):
-        from granian._signals import set_loop_signals
+        from aethonan._signals import set_loop_signals
 
         callback, callback_init, callback_del = _rsgi_cbs_from_target(callback)
         wcallback = _future_watcher_wrapper(_rsgi_call_wrap(callback, log_access_fmt))
@@ -342,7 +342,7 @@ class MPServer(AbstractServer[WorkerProcess]):
         scope_opts: dict[str, Any],
         metrics: Any,
     ):
-        from granian._signals import set_sync_signals
+        from aethonan._signals import set_sync_signals
 
         wcallback = _wsgi_call_wrap(callback, scope_opts, log_access_fmt)
         shutdown_event = set_sync_signals()

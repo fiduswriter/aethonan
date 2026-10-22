@@ -81,7 +81,7 @@ impl ResponseBodyStream {
     }
 }
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(crate) struct ASGIHTTPProtocol {
     rt: RuntimeRef,
     tx: Mutex<Option<oneshot::Sender<HTTPResponse>>>,
@@ -401,7 +401,7 @@ impl WebsocketDetachedTransport {
     }
 }
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(crate) struct ASGIWebsocketProtocol {
     rt: RuntimeRef,
     tx: Mutex<Option<oneshot::Sender<WebsocketDetachedTransport>>>,

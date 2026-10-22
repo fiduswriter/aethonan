@@ -67,7 +67,7 @@ impl ResponseBodyStream {
     }
 }
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(crate) struct RSGIHTTPStreamTransport {
     tx: mpsc::UnboundedSender<body::Bytes>,
 }
@@ -98,7 +98,7 @@ impl RSGIHTTPStreamTransport {
     }
 }
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(crate) struct RSGIHTTPProtocol {
     rt: RuntimeRef,
     disconnect_guard: Arc<SetOnce<()>>,
@@ -262,7 +262,7 @@ impl RSGIHTTPProtocol {
     }
 }
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(crate) struct RSGIWebsocketTransport {
     rt: RuntimeRef,
     dg: Arc<Notify>,
@@ -350,7 +350,7 @@ impl RSGIWebsocketTransport {
     }
 }
 
-#[pyclass(frozen, module = "granian._granian")]
+#[pyclass(frozen, module = "aethonan._aethonan")]
 pub(crate) struct RSGIWebsocketProtocol {
     rt: RuntimeRef,
     tx: Mutex<Option<oneshot::Sender<WebsocketDetachedTransport>>>,

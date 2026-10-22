@@ -14,7 +14,7 @@ from h2.config import H2Configuration
 from h2.connection import H2Connection
 from h2.events import DataReceived, ResponseReceived, StreamEnded
 
-from granian.constants import HTTPModes
+from aethonan.constants import HTTPModes
 
 OPCODE_TEXT = 0x1
 OPCODE_BINARY = 0x2

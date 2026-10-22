@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from granian import Granian
+from aethonan import Granian
 
 
 def _serve(**kwargs):

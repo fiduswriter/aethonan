@@ -16,19 +16,19 @@ WS_CONCURRENCIES = [(8, 20_000), (16, 10_000), (32, 5000), (64, 2500)]
 
 APPS = {
     'asgi': (
-        'granian --interface asgi --log-level warning --backlog 2048 '
+        'aethonan --interface asgi --log-level warning --backlog 2048 '
         '{wsmode}--http {http} --loop {loop} --task-impl {timpl} '
         '--workers {procs} --runtime-threads {threads}{bthreads} '
         '--runtime-mode {thmode} {app}.asgi:app'
     ),
     'rsgi': (
-        'granian --interface rsgi --log-level warning --backlog 2048 '
+        'aethonan --interface rsgi --log-level warning --backlog 2048 '
         '{wsmode}--http {http} --loop {loop} --task-impl {timpl} '
         '--workers {procs} --runtime-threads {threads}{bthreads} '
         '--runtime-mode {thmode} {app}.rsgi:app'
     ),
     'wsgi': (
-        'granian --interface wsgi --log-level warning --backlog 2048 '
+        'aethonan --interface wsgi --log-level warning --backlog 2048 '
         '{wsmode}--http {http} '
         '--workers {procs} --runtime-threads {threads}{bthreads} '
         '--runtime-mode {thmode} app.wsgi:app'
@@ -310,11 +310,11 @@ def task_impl():
 def vs_asgi():
     results = {}
     benches = {'get 10KB': ('b10k', {}), 'echo 10KB (iter)': ('echoi', {'post': 10 * 1024})}
-    for fw in ['granian_asgi', 'gunicorn_asgi', 'uvicorn_h11', 'uvicorn_httptools', 'hypercorn']:
+    for fw in ['aethonan_asgi', 'gunicorn_asgi', 'uvicorn_h11', 'uvicorn_httptools', 'hypercorn']:
         for key, bench_data in benches.items():
             route, opts = bench_data
             opts['concurrencies'] = [128]
-            fw_app = fw.split('_')[1] if fw.startswith('granian') else fw
+            fw_app = fw.split('_')[1] if fw.startswith('aethonan') else fw
             title = ' '.join(item.title() for item in fw.split('_'))
             with app(fw_app):
                 results[f'{title} {key}'] = benchmark(route, **opts)
@@ -324,11 +324,11 @@ def vs_asgi():
 def vs_wsgi():
     results = {}
     benches = {'get 10KB': ('b10k', {}), 'echo 10KB (iter)': ('echoi', {'post': 10 * 1024})}
-    for fw in ['granian_wsgi', 'gunicorn_gthread', 'gunicorn_gevent', 'uwsgi']:
+    for fw in ['aethonan_wsgi', 'gunicorn_gthread', 'gunicorn_gevent', 'uwsgi']:
         for key, bench_data in benches.items():
             route, opts = bench_data
             opts['concurrencies'] = [64]
-            fw_app = fw.split('_')[1] if fw.startswith('granian') else fw
+            fw_app = fw.split('_')[1] if fw.startswith('aethonan') else fw
             title = ' '.join(item.title() for item in fw.split('_'))
             with app(fw_app, bthreads=1):
                 results[f'{title} {key}'] = benchmark(route, **opts)
@@ -338,11 +338,11 @@ def vs_wsgi():
 def vs_http2():
     results = {}
     benches = {'get 10KB': ('b10k', {}), 'echo 10KB (iter)': ('echoi', {'post': 10 * 1024})}
-    for fw in ['granian_asgi', 'hypercorn']:
+    for fw in ['aethonan_asgi', 'hypercorn']:
         for key, bench_data in benches.items():
             route, opts = bench_data
             opts['concurrencies'] = [128]
-            fw_app = fw.split('_')[1] if fw.startswith('granian') else fw
+            fw_app = fw.split('_')[1] if fw.startswith('aethonan') else fw
             title = ' '.join(item.title() for item in fw.split('_'))
             with app(fw_app, http='2', threads=2):
                 results[f'{title} {key}'] = benchmark(route, h2=True, **opts)
@@ -352,7 +352,7 @@ def vs_http2():
 def vs_files():
     results = {}
     with app('asgi', bthreads=1):
-        results['Granian (pathsend)'] = benchmark('fp', concurrencies=[128])
+        results['Aethonan (pathsend)'] = benchmark('fp', concurrencies=[128])
     for fw in ['gunicorn_asgi', 'uvicorn_h11', 'uvicorn_httptools', 'hypercorn']:
         title = ' '.join(item.title() for item in fw.split('_'))
         with app(fw):
@@ -364,9 +364,9 @@ def vs_io():
     results = {}
     benches = {'10ms': ('io10', {}), '100ms': ('io100', {})}
     for fw in [
-        'granian_rsgi',
-        'granian_asgi',
-        'granian_wsgi',
+        'aethonan_rsgi',
+        'aethonan_asgi',
+        'aethonan_wsgi',
         'gunicorn_asgi',
         'uvicorn_httptools',
         'hypercorn',
@@ -376,7 +376,7 @@ def vs_io():
         for key, bench_data in benches.items():
             route, opts = bench_data
             opts['concurrencies'] = [512]
-            fw_app = fw.split('_')[1] if fw.startswith('granian') else fw
+            fw_app = fw.split('_')[1] if fw.startswith('aethonan') else fw
             title = ' '.join(item.title() for item in fw.split('_'))
             with app(fw_app):
                 results[f'{title} {key}'] = benchmark(route, **opts)
@@ -386,23 +386,23 @@ def vs_io():
 def vs_ws():
     results = {}
     for fw in [
-        'granian_rsgi',
-        'granian_asgi',
+        'aethonan_rsgi',
+        'aethonan_asgi',
         'gunicorn_asgi',
         'uvicorn_h11',
         'hypercorn',
     ]:
-        fw_app = fw.split('_')[1] if fw.startswith('granian') else fw
+        fw_app = fw.split('_')[1] if fw.startswith('aethonan') else fw
         title = ' '.join(item.title() for item in fw.split('_'))
         with app(fw_app, ws=True, threads=2, app_path='ws.app'):
             results[title] = benchmark_ws()
     return results
 
 
-def _granian_version():
-    import granian
+def _aethonan_version():
+    import aethonan
 
-    return granian.__version__
+    return aethonan.__version__
 
 
 def run():
@@ -452,7 +452,7 @@ def run():
                     'run_at': int(now.timestamp()),
                     'pyver': f'{pyver.major}.{pyver.minor}',
                     'results': results,
-                    'granian': _granian_version(),
+                    'aethonan': _aethonan_version(),
                 }
             )
         )

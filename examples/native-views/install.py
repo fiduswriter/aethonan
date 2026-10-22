@@ -1,7 +1,7 @@
-"""Install the native views extension module over the stock Granian one.
+"""Install the native views extension module over the stock Aethonan one.
 
 The extension module built here is a drop-in replacement of the one shipped
-with the Granian package: the Python side is entirely stock Granian, while the
+with the Aethonan package: the Python side is entirely stock Aethonan, while the
 native routes are provided by this crate.
 """
 
@@ -9,7 +9,7 @@ import pathlib
 import shutil
 import sys
 
-import granian
+import aethonan
 
 
 def main() -> None:
@@ -22,11 +22,11 @@ def main() -> None:
         print(f'{source} does not exist')
         raise SystemExit(1)
 
-    package = pathlib.Path(granian.__path__[0])
-    for existing in package.glob('_granian*.so'):
+    package = pathlib.Path(aethonan.__path__[0])
+    for existing in package.glob('_aethonan*.so'):
         existing.unlink()
 
-    target = package / '_granian.so'
+    target = package / '_aethonan.so'
     shutil.copy(source, target)
     print(f'installed {target}')
 

@@ -18,11 +18,11 @@ uv run maturin build --release --features jemalloc --interpreter ./benchmarks/.e
 uv run maturin build --release --features jemalloc --interpreter ./benchmarks/.envs/.venv313/bin/python
 uv run maturin build --release --features jemalloc --interpreter ./benchmarks/.envs/.venv314/bin/python
 
-VIRTUAL_ENV=$(pwd)/benchmarks/.envs/.venv310 uv pip install $(ls target/wheels/granian-*-cp310-*.whl)
-VIRTUAL_ENV=$(pwd)/benchmarks/.envs/.venv311 uv pip install $(ls target/wheels/granian-*-cp311-*.whl)
-VIRTUAL_ENV=$(pwd)/benchmarks/.envs/.venv312 uv pip install $(ls target/wheels/granian-*-cp312-*.whl)
-VIRTUAL_ENV=$(pwd)/benchmarks/.envs/.venv313 uv pip install $(ls target/wheels/granian-*-cp313-*.whl)
-VIRTUAL_ENV=$(pwd)/benchmarks/.envs/.venv314 uv pip install $(ls target/wheels/granian-*-cp314-*.whl)
+VIRTUAL_ENV=$(pwd)/benchmarks/.envs/.venv310 uv pip install $(ls target/wheels/aethonan-*-cp310-*.whl)
+VIRTUAL_ENV=$(pwd)/benchmarks/.envs/.venv311 uv pip install $(ls target/wheels/aethonan-*-cp311-*.whl)
+VIRTUAL_ENV=$(pwd)/benchmarks/.envs/.venv312 uv pip install $(ls target/wheels/aethonan-*-cp312-*.whl)
+VIRTUAL_ENV=$(pwd)/benchmarks/.envs/.venv313 uv pip install $(ls target/wheels/aethonan-*-cp313-*.whl)
+VIRTUAL_ENV=$(pwd)/benchmarks/.envs/.venv314 uv pip install $(ls target/wheels/aethonan-*-cp314-*.whl)
 
 VIRTUAL_ENV=$(pwd)/benchmarks/.envs/.venv310 uv pip install -r ./benchmarks/envs/common.txt
 VIRTUAL_ENV=$(pwd)/benchmarks/.envs/.venv311 uv pip install -r ./benchmarks/envs/common.txt
