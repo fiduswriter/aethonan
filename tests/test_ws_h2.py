@@ -143,3 +143,16 @@ async def test_app_ws_over_h2(server, runtime_mode):
 
             client.send(b'foo')
             assert client.recv() == b'foo'
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('server', ['asgi', 'rsgi'], indirect=True)
+@pytest.mark.parametrize('runtime_mode', ['mt', 'st'])
+async def test_native_ws_over_h2(server, runtime_mode):
+    async with server(runtime_mode, http=HTTPModes.http2) as port:
+        with H2WebSocketClient('127.0.0.1', port, '/native_ws') as client:
+            status = client.connect()
+            assert status == 200
+
+            client.send(b'foo')
+            assert client.recv() == b'foo'
