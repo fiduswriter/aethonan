@@ -4,10 +4,10 @@ on:
   pull_request:
     types: [opened, synchronize]
     branches:
-      - master
+      - aethonan
   push:
     branches:
-      - master
+      - aethonan
 
 permissions: {}
 
